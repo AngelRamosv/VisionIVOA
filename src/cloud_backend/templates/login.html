@@ -4,186 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - IVOA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=20">
     <style>
-        :root {
-            --bg-body: #111217;
-            --bg-card: #181b1f;
-            --text-main: #d8d9da;
-            --text-muted: #8e8e93;
-            --border-color: #2c3236;
-            --primary: #3274d9;
-            --primary-hover: #1f60c4;
-            --danger: #e02f44;
-            --input-bg: #0b0c0e;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-body);
-            background-image: radial-gradient(circle at 50% 0%, #2a2233 0%, var(--bg-body) 60%);
-            color: var(--text-main);
-            height: 100vh;
-            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            height: 100vh;
         }
-
         .login-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            border-radius: 1.5rem;
             width: 100%;
-            max-width: 380px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .logo-container {
+            max-width: 400px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
-            margin-bottom: 2rem;
         }
-
-        .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-            box-shadow: 0 0 20px rgba(0, 114, 255, 0.5);
-            position: relative;
-        }
-        
-        .logo-icon::after {
-            content: '';
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: var(--bg-card);
-            border-radius: 50%;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            margin: 0;
-            color: #fff;
-        }
-
         .form-group {
-            margin-bottom: 1.2rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
         }
-
-        label {
+        .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            font-size: 0.85rem;
             color: var(--text-muted);
-            font-weight: 500;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
-
-        input {
+        .form-group input {
             width: 100%;
-            padding: 0.6rem 0.8rem;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 3px;
-            color: var(--text-main);
-            font-size: 0.95rem;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 1rem;
             box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-
-        input:focus {
             outline: none;
-            border-color: var(--primary);
+            transition: all 0.3s;
         }
-
-        .btn-submit {
+        .form-group input:focus {
+            border-color: var(--brand-red);
+            box-shadow: 0 0 0 2px rgba(225, 6, 0, 0.2);
+        }
+        button[type="submit"] {
             width: 100%;
-            padding: 0.7rem;
-            background-color: var(--primary);
+            padding: 1rem;
+            background: var(--brand-red);
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 8px;
             font-size: 1rem;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 1rem;
-            transition: background-color 0.2s;
-        }
-
-        .btn-submit:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .error-message {
-            background-color: rgba(224, 47, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            padding: 0.8rem;
-            border-radius: 3px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-            text-align: center;
-            display: none;
-        }
-
-        .forgot-password {
-            text-align: right;
+            transition: background 0.3s;
             margin-top: 1rem;
         }
-
-        .forgot-password a {
-            color: var(--primary);
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
-
-        .forgot-password a:hover {
-            text-decoration: underline;
+        button[type="submit"]:hover {
+            background: #b91c1c;
         }
     </style>
 </head>
 <body>
+    <div class="bg-mesh">
+        <div class="mesh-orb-1"></div>
+        <div class="mesh-orb-2"></div>
+        <div class="mesh-orb-3"></div>
+    </div>
 
     <div class="login-card">
-        <div class="logo-container">
-            <div class="logo-icon"></div>
-            <h2>Welcome to IVOA</h2>
+        <div style="display:flex; justify-content:center; margin-bottom: 2rem;">
+            <div class="brand-logo" style="font-size: 2rem; padding: 0.8rem 1.5rem;">
+                izzi <span class="brand-ivoa" style="font-size: 1rem;">IVOA</span>
+            </div>
         </div>
-
-        <div class="error-message" id="error-msg">
-            Invalid email or password
-        </div>
+        
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Acceso Seguro a Inteligencia Operativa</p>
 
         <form action="/login" method="POST">
             <div class="form-group">
-                <label for="username">Email or username</label>
-                <input type="text" id="username" name="username" placeholder="email or username" required autofocus>
+                <label>Usuario / Empleado ID</label>
+                <input type="text" name="username" required placeholder="ej. admin">
             </div>
-            
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="password" required>
+                <label>Contraseña</label>
+                <input type="password" name="password" required placeholder="••••••••">
             </div>
-
-            <button type="submit" class="btn-submit">Log in</button>
+            <button type="submit">Iniciar Sesión</button>
         </form>
-
-        <div class="forgot-password">
-            <a href="#">Forgot your password?</a>
-        </div>
     </div>
 
     <script>
-        // Mostrar error si la URL trae parámetro ?error=1
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('error')) {
-            document.getElementById('error-msg').style.display = 'block';
+            alert('Credenciales incorrectas');
         }
     </script>
 </body>

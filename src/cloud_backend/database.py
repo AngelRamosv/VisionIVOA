@@ -1,10 +1,17 @@
+import os
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "postgresql://ivoa_user:ivoa_password@localhost/ivoa_db"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DEFAULT_SQLITE_PATH = os.path.join(BASE_DIR, "ivoa.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH}")
 
-engine = create_engine(DATABASE_URL)
+engine_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    engine_args["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **engine_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -20,6 +27,9 @@ class SesionPersona(Base):
     salio_de_modulo = Column(DateTime, nullable=True)
     estado = Column(String, default="detectado")
     tiempo_total_atencion_segundos = Column(Integer, nullable=True)
+    ropa_embedding = Column(String, nullable=True) # Histograma de ropa JSON
+    cara_embedding = Column(String, nullable=True) # ArcFace embedding JSON
+    nombre_reconocido = Column(String, nullable=True)
 
 class Evento(Base):
     __tablename__ = "eventos"

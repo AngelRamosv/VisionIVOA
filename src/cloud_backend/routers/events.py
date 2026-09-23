@@ -1,12 +1,98 @@
 import json
 from fastapi import APIRouter, Depends
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+import csv
+import io
 
 from ..database import get_db, SesionPersona, Evento, Hallazgo
 from ..schemas import PersonSessionPayload, EventoPayload
 
 router = APIRouter()
+
+@router.get("/report/excel")
+def download_excel_report(db: Session = Depends(get_db)):
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    except ImportError:
+        return {"error": "openpyxl not installed"}
+        
+    events = db.query(Evento).order_by(Evento.timestamp.desc()).all()
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte Incidencias"
+    
+    # Headers
+    headers = ['ID', 'Fecha', 'Hora', 'Etiqueta (Categoría)', 'Detalles', 'Severidad']
+    ws.append(headers)
+    
+    # Styling Headers
+    header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    for col in range(1, 7):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        
+    # Styling Rows
+    thin_border = Border(left=Side(style='thin', color='E2E8F0'), 
+                         right=Side(style='thin', color='E2E8F0'), 
+                         top=Side(style='thin', color='E2E8F0'), 
+                         bottom=Side(style='thin', color='E2E8F0'))
+                         
+    row_num = 2
+    for ev in events:
+        fecha = ev.timestamp.strftime('%Y-%m-%d') if ev.timestamp else ""
+        hora = ev.timestamp.strftime('%H:%M:%S') if ev.timestamp else ""
+        try:
+            parsed = json.loads(ev.details)
+            detalle = parsed.get('message', ev.details)
+        except:
+            detalle = ev.details
+            
+        ws.append([ev.id, fecha, hora, ev.event_type, detalle, ev.severity])
+        
+        # Color specific categories
+        cat = ev.event_type
+        row_color = "FFFFFF"
+        if cat == "late_opening": row_color = "F3E8FF" # Purple tint
+        elif "celular" in cat: row_color = "FEE2E2" # Red tint
+        elif "uniforme" in cat: row_color = "FFE4E6" # Rose tint
+        elif "alimentos" in cat: row_color = "FFEDD5" # Orange tint
+        
+        fill = PatternFill(start_color=row_color, end_color=row_color, fill_type="solid")
+        
+        for col in range(1, 7):
+            c = ws.cell(row=row_num, column=col)
+            c.fill = fill
+            c.border = thin_border
+            if col in [1, 2, 3, 6]:
+                c.alignment = Alignment(horizontal="center")
+        row_num += 1
+        
+    # Auto-adjust column widths
+    dims = {}
+    for row in ws.rows:
+        for cell in row:
+            if cell.value:
+                dims[cell.column_letter] = max((dims.get(cell.column_letter, 0), len(str(cell.value))))    
+    for col, value in dims.items():
+        ws.column_dimensions[col].width = min(value + 2, 60)
+        
+    # Save to memory
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=Reporte_IVOAVISION_{datetime.now().strftime('%Y%m%d')}.xlsx"}
+    )
 
 @router.post("/session")
 def update_session(payload: PersonSessionPayload, db: Session = Depends(get_db)):
@@ -55,27 +141,69 @@ def log_event(payload: EventoPayload, db: Session = Depends(get_db)):
     db.refresh(nuevo_evento)
 
     critical_events = [
-        "finding_created", "queue_threshold_exceeded", "late_opening", "customer_abandonment",
-        "incidencia_rv_conteo", "incidencia_alimentos", "incidencia_celular", "incidencia_uniforme"
+        "late_opening", 
+        "incidencia_uniforme", 
+        "incidencia_celular", 
+        "incidencia_audifonos",
+        "incidencia_dinero",
+        "incidencia_billetes",
+        "incidencia_llaves",
+        "incidencia_alimentos",
+        "incidencia_comida",
+        "incidencia_arreglo_personal",
+        "incidencia_maquillaje",
+        "incidencia_paginas",
+        "paginas_no_autorizadas",
+        "incidencia_saturacion",
+        "queue_saturation",
+        "customer_abandonment",
+        "excessive_service_time",
+        "incidencia_atencion",
+        "incidencia_situacion_atipica",
+        "incidencia_seguridad"
     ]
     if payload.event_type in critical_events:
         if payload.event_type == "late_opening":
-            cat = "Apertura Tardía"
-        elif payload.event_type == "customer_abandonment":
-            cat = "Abandono de Cliente"
-        elif payload.event_type == "queue_threshold_exceeded":
-            cat = "Saturación de Fila"
+            cat = "Apertura tardia"
         elif payload.event_type == "incidencia_uniforme":
-            cat = "Uniforme Incompleto"
+            cat = "Codigo de vestimenta"
         elif payload.event_type == "incidencia_celular":
-            cat = "Uso de Celular"
-        elif payload.event_type == "incidencia_alimentos":
-            cat = "Consumo de Alimentos"
-        elif payload.event_type == "incidencia_rv_conteo":
-            cat = "Efectivo Expuesto"
+            cat = "Uso de celulares"
+        elif payload.event_type == "incidencia_audifonos":
+            cat = "Uso de audifonos"
+        elif payload.event_type in ["incidencia_dinero", "incidencia_billetes"]:
+            cat = "Billetes dinero"
+        elif payload.event_type in ["incidencia_llaves"]:
+            cat = "Llaves"
+        elif payload.event_type in ["incidencia_alimentos", "incidencia_comida"]:
+            cat = "Consumo de alimentos"
+        elif payload.event_type in ["incidencia_arreglo_personal", "incidencia_maquillaje"]:
+            cat = "Arreglo personal"
+        elif payload.event_type in ["incidencia_paginas", "paginas_no_autorizadas"]:
+            cat = "Paginas no autorizadas"
+        elif payload.event_type in ["incidencia_saturacion", "queue_saturation"]:
+            cat = "Saturación de fila"
+        elif payload.event_type in ["customer_abandonment"]:
+            cat = "Abandono de fila"
+        elif payload.event_type in ["excessive_service_time", "incidencia_atencion"]:
+            cat = "Atención excedida"
+        elif payload.event_type == "incidencia_situacion_atipica":
+            cat = "Situacion atipica"
+        elif payload.event_type == "incidencia_seguridad":
+            cat = "Seguridad"
         else:
             cat = "Acción Requerida"
             
+        # Regla de negocio: "Apertura tardia", "Codigo de vestimenta", "Seguridad/Situacion atipica", etc. solo 1 vez.
+        # "Uso de celulares", "Consumo de alimentos", "Paginas no autorizadas", "Uso de audifonos" permiten múltiples alertas.
+        categorias_multiples = ["Uso de celulares", "Consumo de alimentos", "Paginas no autorizadas", "Uso de audifonos"]
+        
+        if cat not in categorias_multiples:
+            existe = db.query(Hallazgo).filter(Hallazgo.categoria == cat).first()
+            if existe:
+                return {"status": "success", "message": "Alerta ignorada (regla de única vez)"}
+
+        # Registramos el hallazgo
         nuevo_hallazgo = Hallazgo(
             evento_id=nuevo_evento.id,
             categoria=cat,
@@ -86,8 +214,48 @@ def log_event(payload: EventoPayload, db: Session = Depends(get_db)):
         )
         db.add(nuevo_hallazgo)
         db.commit()
+        db.refresh(nuevo_hallazgo)
+        
+        # --- Enviar Notificaciones en segundo plano ---
+        import threading
+        threading.Thread(target=trigger_alerts, args=(cat, payload.severity.upper(), payload.details)).start()
 
     return {"status": "success"}
+
+def trigger_alerts(cat, severity, details):
+    import json
+    from ..whatsapp_service import send_whatsapp_message
+    
+    config = {"wa_phone": "+5215584073442", "email": "angel.ramos@izzi.mx", "enable_wa": True, "enable_email": False}
+    try:
+        with open("notify_config.json", "r") as f:
+            config = json.load(f)
+    except: pass
+    
+    if isinstance(details, dict):
+        det_str = details.get('message', str(details))
+    else:
+        det_str = str(details)
+        
+    # Mejorar el formato de severidad
+    sev_map = {
+        "warning": "🔴 ALTA (Infracción Detectada)",
+        "critical": "🚨 CRÍTICA (Alerta de Seguridad)",
+        "info": "🟡 MEDIA (Observación)"
+    }
+    sev_es = sev_map.get(str(severity).lower(), "🔴 ALTA")
+    
+    from datetime import datetime
+    now_str = datetime.now().strftime("%d/%m/%Y a las %H:%M:%S")
+    
+    msg = f"🚨 *Alerta Operativa (IVOA)* 🚨\n\n*Fecha y Hora:* {now_str}\n*Incidencia:* {cat}\n*Detalle:* {det_str}\n\n📊 *Monitoreo en vivo:*\nhttp://192.168.51.231:8001/dashboard"
+    
+    if config.get("enable_wa") and config.get("wa_phone"):
+        send_whatsapp_message(msg, phone=config.get("wa_phone"))
+        
+    if config.get("enable_email") and config.get("email"):
+        print(f"[Simulador Email] Enviando correo de alerta a {config.get('email')}...\nContenido:\n{msg}")
+        # Aquí se puede conectar smtplib o SendGrid en el futuro
 
 @router.get("/log")
 def get_events(limit: int = 5, db: Session = Depends(get_db)):

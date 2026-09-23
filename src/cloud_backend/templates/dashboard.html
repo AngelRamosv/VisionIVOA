@@ -1,50 +1,1083 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IVOA - Central Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <title>IVOA - Plataforma de Inteligencia Operativa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=21">
+    <!-- Iconos SVG (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .nav-tabs {
+            align-items: center;
+            padding: 1rem 2rem;
+        }
+        .nav-tab {
+            padding: 0.6rem 1rem;
+            margin-right: 0.5rem;
+            border-radius: 9999px;
+        }
+        .nav-tab.active {
+            padding: 0.6rem 1.2rem;
+        }
+    </style>
 </head>
 <body>
+    <!-- Background Mesh -->
+    <div class="bg-mesh">
+        <div class="mesh-orb-1"></div>
+        <div class="mesh-orb-2"></div>
+        <div class="mesh-orb-3"></div>
+    </div>
 
-    <header>
-        <div>
-            <h1>IVOA Dashboard</h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem;">Central Operations Management</p>
+    <!-- Header Principal -->
+    <header class="top-header">
+        <div class="header-left">
+            <div class="brand-logo">
+                izzi <span class="brand-ivoa">IVOA</span>
+            </div>
+            <div class="header-titles">
+                <h1>Plataforma de Inteligencia Operativa <span class="badge-piloto">Piloto v1.0</span></h1>
+                <p>📍 Sucursal izzi San Ángel | CDMX Sur</p>
+            </div>
         </div>
-        <div id="connection-status" class="badge en_progreso">Live API Connected</div>
+        <div style="display:flex; gap:1rem; align-items:center;">
+            <div style="background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.2);">
+                <i data-lucide="clock" style="width: 14px; height: 14px; display:inline-block; vertical-align:middle;"></i> <span id="clock-display">00:00:00</span>
+            </div>
+            <a href="/logout" style="color:var(--text-muted); text-decoration:none; font-size:0.9rem;">Cerrar Sesión</a>
+        </div>
     </header>
 
-    <div class="stats-container">
-        <div class="stat-card">
-            <h3>Total Tickets</h3>
-            <div class="value" id="stat-total">-</div>
+    <!-- Navigation Tabs (Estilo IZZI IVOA) -->
+    <nav class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('tab-live', this)">
+            <i data-lucide="camera" style="width:16px; height:16px;"></i> Monitor IVOA en vivo
         </div>
-        <div class="stat-card">
-            <h3>Acción Requerida</h3>
-            <div class="value" id="stat-open" style="color: var(--danger)">-</div>
+        <div class="nav-tab" onclick="switchTab('tab-alerts', this)">
+            <i data-lucide="activity" style="width:16px; height:16px;"></i> Operación & Alertas
         </div>
-        <div class="stat-card">
-            <h3>Resueltos (SLA)</h3>
-            <div class="value" id="stat-closed" style="color: var(--success)">-</div>
+        <div class="nav-tab" onclick="switchTab('tab-reports', this)">
+            <i data-lucide="bar-chart-2" style="width:16px; height:16px;"></i> Reportes & KPIs
         </div>
-    </div>
+        <div class="nav-tab" onclick="switchTab('tab-privacy', this)">
+            <i data-lucide="sliders" style="width:16px; height:16px;"></i> Ajustes de incidencias
+        </div>
+        <div class="nav-tab" onclick="switchTab('tab-whatsapp', this)">
+            <i data-lucide="message-circle" style="width:16px; height:16px;"></i> Notificaciones WA
+        </div>
+        <div class="nav-tab" onclick="switchTab('tab-training', this)">
+            <i data-lucide="brain" style="width:16px; height:16px;"></i> Entrenamiento IA
+        </div>
+        <div class="nav-tab" onclick="switchTab('tab-config', this)">
+            <i data-lucide="settings" style="width:16px; height:16px;"></i> Config. Conexión
+        </div>
+    </nav>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2 style="font-weight: 600;">Hallazgos Recientes</h2>
-        <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="clearTickets()">Actualizar (Reset a Cero)</button>
-    </div>
+    <!-- Contenedor Principal -->
+    <main class="main-content">
 
-    <div class="tickets-grid" id="tickets-container">
-        <!-- Tickets will be injected here -->
-        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-            <div class="loader"></div>
-            <p style="margin-top: 1rem; color: var(--text-muted);">Cargando tickets...</p>
-        </div>
-    </div>
+        <!-- PESTAÑA 1: Monitor En Vivo -->
+        <section id="tab-live" class="tab-pane active">
+            <div class="glass-panel" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 1rem 1.5rem;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px;">📍 NODO DE CÁMARA:</span>
+                <select style="background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none;">
+                    <option>Módulo de Atención (Cámara IP Principal)</option>
+                </select>
+            </div>
 
-    <script src="/static/js/dashboard.js"></script>
+            <div class="video-container">
+                <div class="video-overlay-badge">
+                    <div class="dot-green"></div> Módulo de Atención (Live) <span style="color:#f59e0b; margin-left:0.5rem;">| Análisis Exclusivo de Cámara Activa</span>
+                </div>
+                <img id="live-video-feed" src="http://localhost:5000/video_feed" onerror="this.onerror=null; this.src='/static/placeholder.jpg';">
+                <div id="video-error" style="position:absolute; display:none; flex-direction:column; align-items:center; gap:1rem; color:white;">
+                    <i data-lucide="alert-circle" style="width:48px; height:48px; color:var(--brand-red)"></i>
+                    <h3 style="margin:0;">Acceso a Cámara Móvil Requerido</h3>
+                    <p style="margin:0; font-size:0.9rem; color:var(--text-muted);">No se pudo acceder a la cámara (puede estar siendo utilizada por otra pestaña u origen de video).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA 2: Operación & Alertas -->
+        <section id="tab-alerts" class="tab-pane">
+            <div class="glass-panel" style="margin-bottom: 2rem;">
+                <h2 style="margin: 0 0 1.5rem 0; font-size: 1.2rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="alert-octagon" style="color:var(--danger)"></i> Tickets de Incidencias Operativas
+                </h2>
+                
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">
+                                <th style="padding: 1rem;">ID Ticket</th>
+                                <th style="padding: 1rem;">ID Persona</th>
+                                <th style="padding: 1rem;">Sucursal</th>
+                                <th style="padding: 1rem;">Gerente en Turno</th>
+                                <th style="padding: 1rem;">Tipo de Incidencia</th>
+                                <th style="padding: 1rem;">Severidad</th>
+                                <th style="padding: 1rem;">Fecha Detección</th>
+                                <th style="padding: 1rem;">Estado Actual</th>
+                                <th style="padding: 1rem;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tickets-tbody">
+                            <!-- JS inyecta tickets aquí -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 1rem; text-align: right;">
+                    <button onclick="clearTickets()" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.5rem 1rem; border-radius: 8px; cursor:pointer;">
+                        Limpiar Historial de Alertas
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA 3: Reportes & KPIs -->
+        <section id="tab-reports" class="tab-pane">
+            <!-- KPIS SUPERIORES -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
+                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Total Tickets Emitidos</span>
+                    <span id="t-total" style="font-size: 2rem; font-weight: 800; color: white;">0</span>
+                </div>
+                <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
+                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Acción Requerida (Crítico)</span>
+                    <span id="t-abiertos" style="font-size: 2rem; font-weight: 800; color: #f43f5e;">0</span>
+                </div>
+                <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
+                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Resueltos (SLA Cumplido)</span>
+                    <span id="t-cerrados" style="font-size: 2rem; font-weight: 800; color: #10b981;">0</span>
+                </div>
+            </div>
+
+            <div class="glass-panel" style="padding: 1rem; margin-bottom: 2rem; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.75rem; background: #f09321; color: white; border-radius: 8px 0 0 0;">Sucursal</th>
+                            <th style="padding: 0.75rem; background: #137e38; color: white;">Gerente en Turno</th>
+                            <th style="padding: 0.75rem; background: #7c3aed; color: white;">Apertura tardía</th>
+                            <th style="padding: 0.75rem; background: #be123c; color: white;">Código de vestimenta</th>
+                            <th style="padding: 0.75rem; background: #b91c1c; color: white;">Uso de celulares</th>
+                            <th style="padding: 0.75rem; background: #c2410c; color: white;">Situación atípica</th>
+                            <th style="padding: 0.75rem; background: #0369a1; color: white;">Billetes dinero</th>
+                            <th style="padding: 0.75rem; background: #b45309; color: white;">Consumo de alimentos</th>
+                            <th style="padding: 0.75rem; background: #9a3412; color: white;">Uso de audífonos</th>
+                            <th style="padding: 0.75rem; background: #6d28d9; color: white;">Páginas no autorizadas</th>
+                            <th style="padding: 0.75rem; background: #a21caf; color: white;">Arreglo personal</th>
+                            <th style="padding: 0.75rem; background: #060b14; color: white; border-radius: 0 8px 0 0;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body">
+                        <!-- JS genera la tabla interactiva por sucursal -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <h3 style="margin-top:0; color:var(--text-main); font-size: 1.1rem; margin-bottom: 0;">Distribución de Incidencias (Tiempo Real)</h3>
+                    <button onclick="window.location.href='/v1/report/excel'" style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="download" style="width:16px; height:16px;"></i> Descargar Excel
+                    </button>
+                </div>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="incidenciasChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA X: Entrenamiento IA -->
+        <section id="tab-training" class="tab-pane">
+            <div class="glass-panel" style="max-width: 1000px; margin: 0 auto;">
+                <h2 style="margin: 0 0 1.5rem 0; font-size: 1.4rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="brain" style="color:var(--brand-blue)"></i> Entrenamiento de Nuevos Objetos (Machine Learning)
+                </h2>
+                
+                <p style="margin-bottom: 2rem; color:var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
+                    Enseña a la cámara a detectar nuevos objetos sin alterar la inteligencia actual. El sistema generará un <strong>Micro-Modelo Secundario</strong> exclusivo para este objeto, evitando el olvido catastrófico de las incidencias previas.
+                </p>
+
+                <!-- Paso 1 -->
+                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; color: white;">1. Definir Nuevo Objeto</h3>
+                    <input type="text" id="train-obj-name" placeholder="Ej. Lentes de sol, Gorra, Mochila..." style="width: 100%; max-width: 400px; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 1rem;">
+                </div>
+
+                <!-- Paso 2 -->
+                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: white;">2. Etiquetado Asistido</h3>
+                    <p style="color:var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                        Utiliza el lienzo de MakeSense.ai integrado. Cierra la ventana emergente, sube 50+ fotos del objeto, dibuja las cajas delimitadoras y haz clic en <strong>Actions > Export Annotations > YOLO format</strong>. Se descargará un archivo <code>.zip</code>.
+                    </p>
+                    <div style="border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); height: 600px;">
+                        <!-- MakeSense Iframe -->
+                        <iframe src="https://www.makesense.ai/" width="100%" height="100%" style="border: none;"></iframe>
+                    </div>
+                </div>
+
+                <!-- Paso 3 -->
+                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; color: white;">3. Carga y Entrenamiento</h3>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                        
+                        <!-- Botón de archivo personalizado -->
+                        <input type="file" id="train-zip-upload" accept=".zip" style="display: none;" onchange="document.getElementById('train-zip-text').innerText = this.files[0] ? this.files[0].name : 'Subir Archivo .zip';">
+                        <label for="train-zip-upload" id="train-zip-label" style="background: rgba(0,0,0,0.5); color: white; border: 1px dashed var(--brand-blue); padding: 0.6rem 1.5rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: 0.3s; font-weight: 500;" onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">
+                            <i data-lucide="upload-cloud" style="width:18px; height:18px; color: var(--brand-blue);"></i>
+                            <span id="train-zip-text">Subir Archivo .zip</span>
+                        </label>
+
+                        <button onclick="startTrainingSimulation()" id="btn-start-train" style="background: var(--brand-blue); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='var(--brand-blue)'">
+                            <i data-lucide="cpu" style="display:inline-block; width:16px; height:16px; vertical-align:middle; margin-right:5px;"></i> Entrenar Objeto
+                        </button>
+                    </div>
+                    
+                    <!-- Progress Bar Container -->
+                    <div id="training-progress-container" style="display: none; margin-top: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            <span id="train-status-text" style="color: var(--brand-blue); font-weight: 600;">Inicializando clúster GPU...</span>
+                            <span id="train-percentage" style="color: white; font-weight: bold;">0%</span>
+                        </div>
+                        <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+                            <div id="train-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--brand-blue), #8b5cf6); transition: width 0.4s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 4 -->
+                <div id="step-deploy" style="display: none; background: rgba(16, 185, 129, 0.1); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3); text-align: center;">
+                    <i data-lucide="check-circle" style="color: var(--success); width: 48px; height: 48px; margin-bottom: 1rem;"></i>
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.2rem; color: white;">Micro-Modelo Generado Exitosamente</h3>
+                    <p style="color:var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                        El archivo de pesos YOLOv8 está listo. Actualiza el sistema para inyectarlo en el pipeline de visión sin apagar el nodo edge.
+                    </p>
+                    <button onclick="deployNewModel()" id="btn-deploy-model" style="background: var(--success); color: black; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        Actualizar Sistema en Caliente
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PESTAÑA 4: Config. Conexión -->
+        <section id="tab-config" class="tab-pane">
+            <div class="glass-panel" style="max-width: 600px; margin: 0 auto;">
+                <h2 style="margin: 0 0 1.5rem 0; font-size: 1.2rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="settings" style="color:var(--brand-blue)"></i> Configuración de Sucursal (Local)
+                </h2>
+                
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); padding: 1rem; border-radius: 4px; margin-bottom: 2rem;">
+                    <p style="margin: 0; color: #fca5a5; font-size: 0.9rem;">
+                        <strong>Nota Importante:</strong> Esta configuración afecta únicamente a este equipo local. Para ingresar al sistema, los gerentes deben utilizar las credenciales por defecto: <br><br>
+                        Usuario: <code style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.4rem; border-radius: 4px;">admin</code><br>
+                        Contraseña: <code style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.4rem; border-radius: 4px;">admin123</code>
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display:block; margin-bottom: 0.5rem; color:var(--text-muted);">Nombre de la Sucursal</label>
+                    <input type="text" id="config-sucursal" placeholder="Ej. Izzi Santa Fe" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-size: 1rem;">
+                </div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <label style="display:block; margin-bottom: 0.5rem; color:var(--text-muted);">Nombre del Gerente en Turno</label>
+                    <input type="text" id="config-gerente" placeholder="Ej. Juan Pérez" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-size: 1rem;">
+                </div>
+                
+                <button onclick="saveLocalConfig()" style="background: var(--brand-blue); color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">
+                    Guardar Configuración
+                </button>
+            </div>
+
+            <div class="glass-panel" style="max-width: 600px; margin: 2rem auto 0 auto;">
+                <h2 style="margin: 0 0 1.5rem 0; font-size: 1.2rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="video" style="color:var(--brand-blue)"></i> Vínculo con Cámara Hikvision (Local)
+                </h2>
+                
+                <p style="margin-bottom: 1.5rem; color:var(--text-muted); font-size: 0.95rem;">
+                    Ingresa las credenciales de red para que el motor de Inteligencia Artificial se conecte directamente al flujo de video de las cámaras ya instaladas en la sucursal (RTSP). <strong style="color:white;">El video jamás saldrá de la red local.</strong>
+                </p>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display:block; margin-bottom: 0.5rem; color:var(--text-muted);">Dirección IP de la Cámara (Local)</label>
+                    <input type="text" id="config-cam-ip" placeholder="Ej. 192.168.1.64" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-size: 1rem;">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <div>
+                        <label style="display:block; margin-bottom: 0.5rem; color:var(--text-muted);">Usuario</label>
+                        <input type="text" id="config-cam-user" placeholder="Ej. admin" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-size: 1rem;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 0.5rem; color:var(--text-muted);">Contraseña</label>
+                        <input type="password" id="config-cam-pass" placeholder="••••••••" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-size: 1rem;">
+                    </div>
+                </div>
+                
+                <button onclick="testCameraConnection(this)" style="background: transparent; border: 1px solid var(--brand-blue); color: white; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='transparent'">
+                    Probar Conexión a Cámara (Ping)
+                </button>
+            </div>
+        </section>
+
+        <!-- PESTAÑA 5: Ajustes de la aplicación -->
+        <section id="tab-privacy" class="tab-pane">
+            <div class="glass-panel">
+                <h2 style="margin: 0 0 1.5rem 0; font-size: 1.2rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="sliders" style="color:var(--brand-blue)"></i> Ajustes de incidencias
+                </h2>
+                
+                <p style="margin-bottom: 1.5rem; color:var(--text-muted); font-size: 0.95rem;">
+                    Selecciona qué tipo de incidencias deseas que la cámara detecte y reporte. Desactivar una incidencia dejará de emitir nuevas alertas, pero no borrará el historial ni los reportes KPIs anteriores.
+                </p>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Uso de Celulares</strong>
+                            <input type="checkbox" id="chk-celulares" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Consumo de Alimentos</strong>
+                            <input type="checkbox" id="chk-alimentos" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Páginas no autorizadas</strong>
+                            <input type="checkbox" id="chk-paginas" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Uso de Audífonos</strong>
+                            <input type="checkbox" id="chk-audifonos" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Situación Atípica</strong>
+                            <input type="checkbox" id="chk-atipica" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Arreglo Personal</strong>
+                            <input type="checkbox" id="chk-arreglo" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Uniforme Incompleto</strong>
+                            <input type="checkbox" id="chk-vestimenta" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Dinero en Efectivo</strong>
+                            <input type="checkbox" id="chk-dinero" checked>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <strong>Apertura Tardía</strong>
+                            <input type="checkbox" id="chk-apertura" checked>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem; text-align: right;">
+                    <button onclick="saveAppConfig(this)" style="background: var(--brand-blue); color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Aplicar Ajustes
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA 5: Notificaciones -->
+        <section id="tab-whatsapp" class="tab-pane">
+            <div class="glass-panel">
+                <h2 style="margin: 0 0 1.5rem 0; font-size: 1.2rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="message-circle" style="color:#10b981"></i> Centro de Notificaciones y Alertas
+                </h2>
+                
+                <h3 style="font-size: 1rem; margin-bottom: 1rem;">Configuración de Destinatarios</h3>
+                <div style="background:rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border:1px solid var(--border); margin-bottom: 2rem;">
+                    <p style="margin:0 0 1.5rem 0; font-size:0.9rem; color:var(--text-muted);">El sistema enviará alertas en tiempo real vía WhatsApp al detectar tickets críticos.</p>
+                    
+                    <!-- WhatsApp Config -->
+                    <div style="display:flex; gap: 1rem; align-items:center; margin-bottom: 1.5rem;">
+                        <i data-lucide="message-circle" style="color:#10b981"></i>
+                        <input type="text" id="wa-phone" placeholder="Número WhatsApp (+52155...)" style="background:rgba(255,255,255,0.1); border:1px solid var(--border); padding:0.8rem; border-radius:8px; color:white; width:250px;">
+                    </div>
+
+
+                </div>
+
+                <h3 style="font-size: 1rem; margin-bottom: 1rem;">Enlazar Dispositivo</h3>
+                  <div style="background:rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border:1px solid var(--border);">
+                      <p style="margin:0 0 1rem 0; font-size:0.9rem; color:var(--text-muted);">Haz clic en el botón para enlazar el número de WhatsApp. El sistema guardará la configuración y enviará un mensaje automático de confirmación al cliente.</p>
+                    <button onclick="sendManualWaMessage()" style="background:#10b981; border:none; color:white; padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem;"><i data-lucide="send" style="width:16px; height:16px;"></i> Guardar y Enviar Prueba</button>
+                    <span id="wa-manual-status" style="color:var(--success); font-size:0.9rem; display:none; margin-top:1rem;"><i data-lucide="check" style="width:16px; height:16px; vertical-align:middle;"></i> Mensaje Enviado</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Inicializar iconos
+        lucide.createIcons();
+
+        // Reloj (Solo Hora y Minutos AM/PM)
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
+            document.getElementById('clock-display').innerText = timeString.toUpperCase();
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Sistema de Pestañas
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(nav => nav.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        // Conexión dinámica del video al puerto 5000 de la misma IP
+        const serverIp = window.location.hostname;
+        const videoFeed = document.getElementById('live-video-feed');
+        const videoError = document.getElementById('video-error');
+        
+        videoFeed.onload = function() {
+            videoFeed.style.opacity = "1";
+            videoError.style.display = "none";
+        };
+        videoFeed.onerror = function() {
+            videoFeed.style.opacity = "0.2";
+            videoError.style.display = "flex";
+            // Intentar reconectar
+            setTimeout(() => {
+                videoFeed.src = `http://${serverIp}:5000/video_feed?t=${new Date().getTime()}`;
+            }, 3000);
+        };
+        
+        // Iniciar conexión de video
+        videoFeed.src = `http://${serverIp}:5000/video_feed`;
+
+        // API de Tickets
+        const API_URL = '/v1/findings';
+        
+        // Cargar config de notificaciones al iniciar
+        fetch('/v1/notify_config')
+            .then(r => r.json())
+            .then(data => { 
+                 
+            });
+
+        async function saveNotificationConfig() {
+            let existingConfig = {};
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+            
+            const config = {
+                ...existingConfig,
+                wa_phone: document.getElementById('wa-phone').value,
+                enable_wa: true
+            };
+            await fetch('/v1/notify_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            const status = document.getElementById('notify-save-status');
+            status.style.display = 'inline-block';
+            setTimeout(() => { status.style.display = 'none'; }, 3000);
+        }
+
+        async function sendManualWaMessage() {
+            const telefono = document.getElementById('wa-phone').value;
+            if (!telefono) return alert("Por favor ingresa el número de WhatsApp del cliente.");
+            const text = "Exito. El sistema de Inteligencia Artificial ha sido enlazado a este numero.";
+            
+            
+            
+            // 1. Guardar configuracion primero
+            let existingConfig = {};
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+            
+            const config = {
+                ...existingConfig,
+                wa_phone: telefono,
+                enable_wa: true
+            };
+            
+            await fetch('/v1/notify_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+
+            // 2. Enviar el mensaje manual
+            await fetch('/v1/notify_manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telefono: telefono, mensaje: text })
+            });
+
+            const status = document.getElementById('wa-manual-status');
+            status.innerHTML = '<i data-lucide="check" style="width:16px; height:16px; vertical-align:middle;"></i> Enlazado y Mensaje de Prueba Enviado';
+            status.style.display = 'inline-block';
+            if (window.lucide) window.lucide.createIcons();
+            document.getElementById('wa-phone').value = '';
+            setTimeout(() => { status.style.display = 'none'; }, 4000);
+        }
+        
+        let incidenciasChart = null;
+        function updateChart(data) {
+            const globalCounts = {
+                'Apertura tardia': 0, 'Codigo de vestimenta': 0, 'Uso de celulares': 0,
+                'Consumo de alimentos': 0, 'Paginas no autorizadas': 0,
+                'Arreglo personal': 0, 'Situacion atipica': 0,
+                'Billetes dinero': 0, 'Uso de audifonos': 0
+            };
+            
+            const sucursales = {};
+            
+            data.forEach(d => {
+                let cat = d.categoria;
+                let suc = d.sucursal || 'Centro de Atención';
+                
+                if (!sucursales[suc]) {
+                    sucursales[suc] = {
+                        'Apertura tardia': 0, 'Codigo de vestimenta': 0, 'Uso de celulares': 0,
+                        'Consumo de alimentos': 0, 'Paginas no autorizadas': 0,
+                        'Arreglo personal': 0, 'Situacion atipica': 0,
+                        'Billetes dinero': 0, 'Uso de audifonos': 0, 'Total': 0
+                    };
+                }
+                
+                if (cat) {
+                    globalCounts[cat] = (globalCounts[cat] || 0) + 1;
+                    if (sucursales[suc][cat] !== undefined) {
+                        sucursales[suc][cat]++;
+                    }
+                    sucursales[suc]['Total']++;
+                }
+            });
+
+            // Build single table row
+            const tbody = document.getElementById('summary-table-body');
+            tbody.innerHTML = '';
+            
+            const row = document.createElement('tr');
+            row.style = "background: rgba(255,255,255,0.02);";
+            row.innerHTML = `
+                <td style="padding: 1rem; font-weight: bold; color: var(--brand-blue); border-bottom: 1px solid rgba(255,255,255,0.1);" id="display-sucursal-name">${typeof currentSucursal !== 'undefined' ? currentSucursal : 'Centro de Atención'}</td>
+                <td style="padding: 1rem; font-weight: bold; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1);" id="display-gerente-name">${typeof currentGerente !== 'undefined' ? currentGerente : 'Gerente en Turno'}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Apertura tardia']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Codigo de vestimenta']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Uso de celulares']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Situacion atipica']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Billetes dinero']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Consumo de alimentos']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Uso de audifonos']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Paginas no autorizadas']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white; border-bottom: 1px solid rgba(255,255,255,0.1);">${globalCounts['Arreglo personal']}</td>
+                <td style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: #f43f5e; border-bottom: 1px solid rgba(255,255,255,0.1);">${data.length}</td>
+            `;
+            tbody.appendChild(row);
+
+            // Prepare chart data (excluding 0 values)
+            const activeLabels = [];
+            const activeValues = [];
+            const activeColors = [];
+            
+            const colorMap = {
+                'Apertura tardia': '#7c3aed',
+                'Codigo de vestimenta': '#be123c',
+                'Uso de celulares': '#b91c1c',
+                'Situacion atipica': '#c2410c',
+                'Billetes dinero': '#0369a1',
+                'Consumo de alimentos': '#b45309',
+                'Uso de audifonos': '#9a3412',
+                'Paginas no autorizadas': '#6d28d9',
+                'Arreglo personal': '#a21caf'
+            };
+
+            for (const [key, value] of Object.entries(globalCounts)) {
+                if (value > 0) {
+                    activeLabels.push(key);
+                    activeValues.push(value);
+                    activeColors.push(colorMap[key] || '#38bdf8');
+                }
+            }
+
+            const ctx = document.getElementById('incidenciasChart').getContext('2d');
+            if (incidenciasChart) {
+                incidenciasChart.data.labels = activeLabels;
+                incidenciasChart.data.datasets[0].data = activeValues;
+                incidenciasChart.data.datasets[0].backgroundColor = activeColors;
+                incidenciasChart.data.datasets[0].borderColor = activeColors;
+                if (incidenciasChart.options.scales.x.title) {
+                    incidenciasChart.options.scales.x.title.text = `Sucursal: ${currentSucursal}`;
+                }
+                incidenciasChart.update();
+            } else {
+                incidenciasChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: activeLabels,
+                        datasets: [{
+                            label: 'Tickets Emitidos',
+                            data: activeValues,
+                            backgroundColor: activeColors,
+                            borderColor: activeColors,
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            maxBarThickness: 45
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                            x: { 
+                                ticks: { color: '#e2e8f0' }, 
+                                grid: { display: false },
+                                title: {
+                                    display: true,
+                                    text: `Sucursal: ${currentSucursal}`,
+                                    color: '#94a3b8',
+                                    font: { size: 14, weight: 'bold' }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        }
+
+        async function fetchFindings() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                const total = data.length;
+                const openCount = data.filter(f => f.estado === 'DETECTADO').length;
+                const closedCount = data.filter(f => f.estado === 'CERRADO').length;
+
+                const elTotal = document.getElementById('t-total'); if (elTotal) elTotal.innerText = total;
+                const elOpen = document.getElementById('t-abiertos'); if (elOpen) elOpen.innerText = openCount;
+                const elClosed = document.getElementById('t-cerrados'); if (elClosed) elClosed.innerText = closedCount;
+                
+                updateChart(data);
+
+                const container = document.getElementById('tickets-tbody');
+                if (!container) return;
+                container.innerHTML = '';
+                
+                if (total === 0) {
+                    container.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted)">Todo en orden. No hay alertas críticas.</td></tr>`;
+                    return;
+                }
+                
+                data.forEach(f => {
+                    let sevStr = f.severidad ? f.severidad.toLowerCase() : 'warning';
+                    let severityBadge = (sevStr === 'critical') ? 'danger' : 'warning';
+                    let statusBadge = f.estado === 'DETECTADO' ? 'danger' : 'success';
+                    let catName = f.categoria ? f.categoria.toUpperCase() : 'DESCONOCIDA';
+                    let sevName = f.severidad ? f.severidad.toUpperCase() : 'WARNING';
+                    
+                    let idPersona = '---';
+                    if (catName === 'APERTURA TARDIA') {
+                        idPersona = 'General';
+                    }
+                    if (f.detalles) {
+                        try {
+                            const det = JSON.parse(f.detalles);
+                            const msg = det.message || det.action_required || "";
+                            const match = msg.match(/id_(\d+)/) || msg.match(/id_aleatorio_(\d+)/);
+                            if (match) idPersona = match[0];
+                        } catch(e) {}
+                    }
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>#${f.id}</td>
+                        <td style="font-weight:bold; color:white;">${idPersona}</td>
+                        <td style="color:var(--brand-blue); font-weight:600;">${currentSucursal}</td>
+                        <td style="color:var(--text-muted);">${currentGerente}</td>
+                        <td style="font-weight:500;">${catName}</td>
+                        <td><span class="badge-status ${severityBadge}">${sevName}</span></td>
+                        <td style="color:var(--text-muted)">${new Date(f.fecha_creacion).toLocaleTimeString()}</td>
+                        <td><span class="badge-status ${statusBadge}">${f.estado}</span></td>
+                        <td>
+                            ${f.estado === 'DETECTADO' ? 
+                                `<button onclick="closeTicket(${f.id})" style="background:var(--success); color:black; border:none; padding:0.4rem 0.8rem; border-radius:6px; font-weight:600; cursor:pointer;">Cerrar</button>` 
+                                : '<span style="color:var(--text-muted)">Cerrado</span>'}
+                        </td>
+                    `;
+                    container.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error fetching", error);
+            }
+        }
+
+        async function closeTicket(id) {
+            try {
+                await fetch('/v1/findings/' + id + '/status', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: 'CERRADO' })
+                });
+                fetchFindings();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // ---------------- LOAD CONFIG ----------------
+        let currentSucursal = "Centro de Atención";
+        let currentGerente = "Gerente en Turno";
+
+        async function loadConfig() {
+            try {
+                const res = await fetch('/v1/notify_config');
+                const data = await res.json();
+                
+                // Load WhatsApp settings safely
+                const waPhoneEl = document.getElementById('wa-phone');
+                
+                
+                const waEmailEl = document.getElementById('wa-email');
+                if (waEmailEl && data.email) waEmailEl.value = data.email;
+                
+                const enWaEl = document.getElementById('enable-wa');
+                if (enWaEl && data.enable_wa !== undefined) enWaEl.checked = data.enable_wa;
+                
+                const enEmailEl = document.getElementById('enable-email');
+                if (enEmailEl && data.enable_email !== undefined) enEmailEl.checked = data.enable_email;
+
+                // Load App Config checkboxes
+                const chkApertura = document.getElementById('chk-apertura'); if (chkApertura && data.enable_apertura !== undefined) chkApertura.checked = data.enable_apertura;
+                const chkVestimenta = document.getElementById('chk-vestimenta'); if (chkVestimenta && data.enable_vestimenta !== undefined) chkVestimenta.checked = data.enable_vestimenta;
+                const chkCelulares = document.getElementById('chk-celulares'); if (chkCelulares && data.enable_celulares !== undefined) chkCelulares.checked = data.enable_celulares;
+                const chkAlimentos = document.getElementById('chk-alimentos'); if (chkAlimentos && data.enable_alimentos !== undefined) chkAlimentos.checked = data.enable_alimentos;
+                const chkPaginas = document.getElementById('chk-paginas'); if (chkPaginas && data.enable_paginas !== undefined) chkPaginas.checked = data.enable_paginas;
+                const chkArreglo = document.getElementById('chk-arreglo'); if (chkArreglo && data.enable_arreglo !== undefined) chkArreglo.checked = data.enable_arreglo;
+                const chkAtipica = document.getElementById('chk-atipica'); if (chkAtipica && data.enable_atipica !== undefined) chkAtipica.checked = data.enable_atipica;
+                const chkDinero = document.getElementById('chk-dinero'); if (chkDinero && data.enable_dinero !== undefined) chkDinero.checked = data.enable_dinero;
+                const chkAudifonos = document.getElementById('chk-audifonos'); if (chkAudifonos && data.enable_audifonos !== undefined) chkAudifonos.checked = data.enable_audifonos;
+
+                // Load Branch settings
+                if (data.sucursal) {
+                    currentSucursal = data.sucursal;
+                    const sucEl = document.getElementById('config-sucursal');
+                    if (sucEl) sucEl.value = data.sucursal;
+                    const displayEl = document.getElementById('display-sucursal-name');
+                    if (displayEl) displayEl.innerText = currentSucursal;
+                }
+                if (data.gerente) {
+                    currentGerente = data.gerente;
+                    const gerEl = document.getElementById('config-gerente');
+                    if (gerEl) gerEl.value = data.gerente;
+                    const displayGerEl = document.getElementById('display-gerente-name');
+                    if (displayGerEl) displayGerEl.innerText = currentGerente;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function saveAppConfig(btn) {
+            const originalText = btn.innerText;
+            btn.innerText = "Guardando...";
+            
+            let existingConfig = {};
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+
+            const payload = {
+                ...existingConfig,
+                enable_apertura: document.getElementById('chk-apertura') ? document.getElementById('chk-apertura').checked : true,
+                enable_vestimenta: document.getElementById('chk-vestimenta') ? document.getElementById('chk-vestimenta').checked : true,
+                enable_celulares: document.getElementById('chk-celulares') ? document.getElementById('chk-celulares').checked : true,
+                enable_alimentos: document.getElementById('chk-alimentos') ? document.getElementById('chk-alimentos').checked : true,
+                enable_paginas: document.getElementById('chk-paginas') ? document.getElementById('chk-paginas').checked : true,
+                enable_arreglo: document.getElementById('chk-arreglo') ? document.getElementById('chk-arreglo').checked : true,
+                enable_atipica: document.getElementById('chk-atipica') ? document.getElementById('chk-atipica').checked : true,
+                enable_dinero: document.getElementById('chk-dinero') ? document.getElementById('chk-dinero').checked : true,
+                enable_audifonos: document.getElementById('chk-audifonos') ? document.getElementById('chk-audifonos').checked : true,
+            };
+
+            try {
+                await fetch('/v1/notify_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                setTimeout(() => {
+                    btn.innerText = "¡Ajustes Aplicados!";
+                    btn.style.background = "var(--success)";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.background = "var(--brand-blue)";
+                    }, 2000);
+                }, 500);
+            } catch (e) {
+                console.error(e);
+                btn.innerText = "Error";
+                btn.style.background = "var(--danger)";
+            }
+        }
+
+        async function testCameraConnection(btn) {
+            const ip = document.getElementById('config-cam-ip').value;
+            const user = document.getElementById('config-cam-user').value;
+            const pass = document.getElementById('config-cam-pass').value;
+            
+            if (!ip) {
+                alert("Por favor ingresa la IP de la cámara.");
+                return;
+            }
+
+            const originalText = btn.innerText;
+            btn.innerText = "Conectando al stream RTSP...";
+            btn.style.opacity = "0.7";
+            btn.style.pointerEvents = "none";
+            
+            // Simular un intento de conexión ping local de 1.5 a 3 segundos
+            setTimeout(() => {
+                btn.innerText = "Conexión Exitosa";
+                btn.style.background = "var(--success)";
+                btn.style.borderColor = "var(--success)";
+                btn.style.color = "black";
+                btn.style.opacity = "1";
+                
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.background = "transparent";
+                    btn.style.borderColor = "var(--brand-blue)";
+                    btn.style.color = "white";
+                    btn.style.pointerEvents = "auto";
+                }, 3000);
+            }, 2000);
+        }
+
+        async function saveLocalConfig() {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Guardando...";
+            
+            // Re-fetch existing config to merge it, so we don't overwrite with nulls
+            let existingConfig = {}
+        // --- FUNCIONES DE ENTRENAMIENTO IA (SIMULACI�N PARA DEMO) ---
+        function startTrainingSimulation() {
+            const objName = document.getElementById('train-obj-name').value;
+            const fileInput = document.getElementById('train-zip-upload').files.length;
+            if (!objName) {
+                alert('Por favor ingresa un nombre para el nuevo objeto (Ej. Lentes)');
+                return;
+            }
+            if (fileInput === 0) {
+                alert('Por favor sube el archivo .zip exportado de MakeSense');
+                return;
+            }
+            
+            const btn = document.getElementById('btn-start-train');
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.5';
+            
+            const container = document.getElementById('training-progress-container');
+            const statusText = document.getElementById('train-status-text');
+            const percentText = document.getElementById('train-percentage');
+            const bar = document.getElementById('train-progress-bar');
+            
+            container.style.display = 'block';
+            document.getElementById('step-deploy').style.display = 'none';
+            
+            let progress = 0;
+            const steps = [
+                {p: 10, msg: 'Extrayendo im�genes y etiquetas (YOLO format)...'},
+                {p: 25, msg: 'Instanciando modelo base YOLOv8-nano...'},
+                {p: 40, msg: 'Iniciando Transfer Learning (Epoch 1/50)...'},
+                {p: 65, msg: 'Optimizando pesos del modelo (Epoch 28/50)...'},
+                {p: 85, msg: 'Calculando m�tricas mAP50-95...'},
+                {p: 100, msg: 'Compilando Micro-Modelo Secundario (.pt)...'}
+            ];
+            
+            let currentStep = 0;
+            
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 5) + 1;
+                if (progress > steps[currentStep].p) {
+                    currentStep++;
+                }
+                
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    statusText.innerText = '�Entrenamiento Finalizado!';
+                    statusText.style.color = 'var(--success)';
+                    
+                    setTimeout(() => {
+                        document.getElementById('step-deploy').style.display = 'block';
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    }, 500);
+                } else {
+                    statusText.innerText = steps[currentStep].msg;
+                    statusText.style.color = 'var(--brand-blue)';
+                }
+                
+                percentText.innerText = progress + '%';
+                bar.style.width = progress + '%';
+            }, 300);
+        }
+
+        function deployNewModel() {
+            const btn = document.getElementById('btn-deploy-model');
+            const originalText = btn.innerText;
+            btn.innerText = 'Inyectando modelo en memoria...';
+            btn.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                btn.innerText = '�Sistema Actualizado!';
+                btn.style.background = 'transparent';
+                btn.style.border = '1px solid var(--success)';
+                btn.style.color = 'var(--success)';
+                
+                setTimeout(() => {
+                    document.getElementById('train-obj-name').value = '';
+                    document.getElementById('train-zip-upload').value = '';
+                    document.getElementById('training-progress-container').style.display = 'none';
+                    document.getElementById('step-deploy').style.display = 'none';
+                    
+                    const btnTrain = document.getElementById('btn-start-train');
+                    btnTrain.style.pointerEvents = 'auto';
+                    btnTrain.style.opacity = '1';
+                    
+                    btn.innerText = originalText;
+                    btn.style.background = 'var(--success)';
+                    btn.style.border = 'none';
+                    btn.style.color = 'black';
+                    
+                    alert('�El motor de IA ha sido actualizado en caliente!\n\nEl nuevo objeto ya est� disponible en el pipeline de visi�n sin haber afectado las reglas existentes.');
+                }, 3000);
+            }, 1500);
+        };
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+            
+            const payload = {
+                ...existingConfig,
+                sucursal: document.getElementById('config-sucursal') ? document.getElementById('config-sucursal').value : existingConfig.sucursal,
+                gerente: document.getElementById('config-gerente') ? document.getElementById('config-gerente').value : existingConfig.gerente
+            };
+            
+            try {
+                await fetch('/v1/notify_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                currentSucursal = payload.sucursal || "Centro de Atención";
+                currentGerente = payload.gerente || "Gerente en Turno";
+                const displayEl = document.getElementById('display-sucursal-name');
+                if (displayEl) displayEl.innerText = currentSucursal;
+                const displayGerEl = document.getElementById('display-gerente-name');
+                if (displayGerEl) displayGerEl.innerText = currentGerente;
+                
+                setTimeout(() => {
+                    btn.innerText = "¡Guardado con éxito!";
+                    btn.style.background = "var(--success)";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.background = "var(--brand-blue)";
+                    }, 2000);
+                }, 500);
+            } catch (e) {
+                console.error(e);
+                btn.innerText = "Error al guardar";
+                btn.style.background = "var(--danger)";
+            }
+        }
+
+        async function saveConfig() {
+            const btn = document.querySelector('#tab-whatsapp button');
+            if(!btn) return;
+            const originalText = btn.innerText;
+            btn.innerText = "Guardando...";
+            
+            let existingConfig = {};
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+            
+            const payload = {
+                ...existingConfig,
+                wa_phone: document.getElementById('wa-phone') ? document.getElementById('wa-phone').value : existingConfig.wa_phone,
+            };
+            
+            try {
+                await fetch('/v1/notify_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                setTimeout(() => {
+                    btn.innerText = "¡Guardado con éxito!";
+                    btn.style.background = "var(--success)";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.background = "var(--brand-blue)";
+                    }, 2000);
+                }, 500);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function clearTickets() {
+            if(!confirm('¿Borrar historial?')) return;
+            try {
+                await fetch(API_URL, { method: 'DELETE' });
+                fetchFindings();
+            } catch(e) {}
+        }
+
+        loadConfig();
+        fetchFindings();
+        setInterval(fetchFindings, 3000);
+    </script>
 </body>
 </html>
+

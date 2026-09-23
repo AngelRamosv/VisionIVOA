@@ -130,7 +130,7 @@ header {
 main {
   padding: 24px 32px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   flex: 1;
 }
@@ -214,25 +214,24 @@ main {
 }
 .espera-text p { font-size: 12px; color: var(--text-muted); }
 
-/* --- Video Card --- */
+/* --- Video Card (Expanded Full Width & Crisp) --- */
 .video-card {
-  padding: 0; overflow: hidden;
-  grid-column: span 1;
+  padding: 0; 
+  margin: 0;
+  overflow: hidden;
+  grid-column: 1 / -1; /* Ocupa todo el ancho de la pantalla */
+  background: #05080E;
+  border: 2px solid rgba(0, 191, 165, 0.6);
+  border-radius: var(--border-radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  width: 100%;
 }
 .video-card img {
-  width: 100%; height: 100%; object-fit: cover;
-  min-height: 200px;
+  width: 100% !important; 
+  height: auto !important; 
+  display: block;
+  object-fit: fill;
 }
-.video-overlay {
-  position: absolute; top: 16px; left: 16px;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-  padding: 6px 12px; border-radius: 6px;
-  font-size: 11px; font-weight: 600; color: #fff;
-  display: flex; align-items: center; gap: 6px;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-.dot-rec { width: 6px; height: 6px; border-radius: 50%; background: #FF1744; animation: blink 1s infinite; }
-@keyframes blink { 50% { opacity: 0.3; } }
 
 /* --- Ocupación Módulos --- */
 .modules-container {
@@ -256,11 +255,11 @@ main {
 .module-footer { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
 
 /* --- Charts --- */
-.chart-card { grid-column: span 2; }
+.chart-card { grid-column: span 1; }
 .chart-container { position: relative; height: 200px; width: 100%; margin-top: 16px; }
 
 /* --- Logs --- */
-.logs-card { grid-column: span 3; }
+.logs-card { grid-column: 1 / -1; }
 .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .log-box {
   background: rgba(0, 191, 165, 0.05);

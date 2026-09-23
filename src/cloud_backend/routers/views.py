@@ -12,6 +12,33 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
+@router.post("/v1/notify_config")
+async def save_notify_config(request: Request):
+    data = await request.json()
+    import json
+    with open("notify_config.json", "w") as f:
+        json.dump(data, f)
+    return {"status": "ok"}
+
+@router.get("/v1/notify_config")
+def get_notify_config():
+    import json
+    try:
+        with open("notify_config.json", "r") as f:
+            return json.load(f)
+    except:
+        return {"wa_phone": "", "email": "angel.ramos@izzi.mx", "enable_wa": True, "enable_email": False}
+
+@router.post("/v1/notify_manual")
+async def manual_notify_test(request: Request):
+    data = await request.json()
+    from ..whatsapp_service import send_whatsapp_message
+    import threading
+    def send():
+        send_whatsapp_message(data.get("mensaje", ""), phone=data.get("telefono", ""))
+    threading.Thread(target=send).start()
+    return {"status": "ok"}
+
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     session_token = request.cookies.get("ivoa_session")
     if not session_token:
@@ -26,6 +53,7 @@ def read_root():
     return RedirectResponse(url="/dashboard")
 
 @router.get("/login")
+@router.get("/dashboard/login")
 def login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
 
@@ -59,16 +87,35 @@ def get_dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request=request, name="dashboard.html", context={"username": user.username})
 
 @router.get("/v1/findings")
-def get_findings(limit: int = 10, db: Session = Depends(get_db)):
-    hallazgos = db.query(Hallazgo).order_by(Hallazgo.fecha_creacion.desc()).limit(limit).all()
+def get_findings(limit: int = 50, db: Session = Depends(get_db)):
+    from ..database import Evento
+    hallazgos = db.query(Hallazgo).order_by(Hallazgo.id.asc()).limit(limit).all()
     resultado = []
     for h in hallazgos:
+        sucursal = "No Asignada"
+        gerente = "No Asignado"
+        
+        if h.evento_id:
+            evento = db.query(Evento).filter(Evento.id == h.evento_id).first()
+            if evento:
+                import json
+                try:
+                    det = json.loads(evento.details)
+                    if isinstance(det, dict):
+                        sucursal = det.get("sucursal", "Centro de Atención")
+                        gerente = det.get("gerente", "Gerente en Turno")
+                except:
+                    pass
+                    
         resultado.append({
             "id": h.id,
             "evento_id": h.evento_id,
             "categoria": h.categoria,
             "estado": h.estado,
             "severidad": h.severidad,
+            "sucursal": sucursal,
+            "gerente": gerente,
+            "detalles": evento.details if evento else "",
             "fecha_creacion": h.fecha_creacion.strftime("%Y-%m-%d %H:%M:%S") if h.fecha_creacion else None,
             "fecha_vencimiento": h.fecha_vencimiento.strftime("%Y-%m-%d %H:%M:%S") if h.fecha_vencimiento else None,
             "fecha_cierre": h.fecha_cierre.strftime("%Y-%m-%d %H:%M:%S") if h.fecha_cierre else None,
@@ -78,7 +125,10 @@ def get_findings(limit: int = 10, db: Session = Depends(get_db)):
 
 @router.delete("/v1/findings")
 def delete_all_findings(db: Session = Depends(get_db)):
+    from ..database import Evento, SesionPersona
     db.query(Hallazgo).delete()
+    db.query(Evento).delete()
+    db.query(SesionPersona).delete()
     db.commit()
     return {"status": "success", "message": "Todos los tickets han sido eliminados."}
 

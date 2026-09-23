@@ -16,3 +16,16 @@ if os.path.exists(static_dir):
 # Incluir las rutas modulares
 app.include_router(events.router, prefix="/v1/events", tags=["events"])
 app.include_router(views.router, tags=["views"])
+
+@app.on_event("startup")
+def init_db_on_startup():
+    from .database import SessionLocal, Hallazgo, Evento, SesionPersona
+    db = SessionLocal()
+    try:
+        # DB deletion removed to persist data across restarts
+        print(">> [IVOA Cloud] Base de datos conectada. Datos preservados.")
+    except Exception as e:
+        db.rollback()
+        print(f"Error reiniciando DB: {e}")
+    finally:
+        db.close()

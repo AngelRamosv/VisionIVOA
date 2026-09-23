@@ -1,0 +1,5 @@
+train: c:\Users\Angel\Desktop\supervision\dataset_v9\train\images
+val: c:\Users\Angel\Desktop\supervision\dataset_v9\val\images
+
+nc: 3
+names: ['llaves', 'billetes', 'situacion_atipica']
