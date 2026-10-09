@@ -216,9 +216,9 @@ def log_event(payload: EventoPayload, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(nuevo_hallazgo)
         
-        # --- Enviar Notificaciones en segundo plano ---
-        import threading
-        threading.Thread(target=trigger_alerts, args=(cat, payload.severity.upper(), payload.details)).start()
+        # (En la nueva arquitectura de Benchmark, las notificaciones en tiempo real estan apagadas.
+        # Solo se enviaran los resumenes cuando se presione el boton de Enviar Alertas despues del Batch).
+        pass
 
     return {"status": "success"}
 
@@ -228,7 +228,7 @@ def trigger_alerts(cat, severity, details):
     
     config = {"wa_phone": "+5215584073442", "email": "angel.ramos@izzi.mx", "enable_wa": True, "enable_email": False}
     try:
-        with open("notify_config.json", "r") as f:
+        with open(r"config/notify_config.json", "r") as f:
             config = json.load(f)
     except: pass
     
@@ -291,3 +291,79 @@ def get_sessions(limit: int = 10, db: Session = Depends(get_db)):
             "salio_de_modulo": s.salio_de_modulo.strftime("%Y-%m-%d %H:%M:%S") if s.salio_de_modulo else None
         })
     return resultado
+
+@router.post("/start_batch_proxy")
+def start_batch_proxy():
+    import requests
+    try:
+        res = requests.post("http://localhost:5000/api/start_batch", timeout=5)
+        return res.json()
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+
+@router.post("/trigger_batch")
+def trigger_batch(db: Session = Depends(get_db)):
+    import json
+    import os
+    from datetime import datetime, timedelta
+    try:
+        from ..whatsapp_service import send_whatsapp_message
+    except:
+        pass
+    
+    # 1. Quitar modo batch
+    try:
+        with open(r"config/notify_config.json", "r") as f:
+            cfg = json.load(f)
+        cfg["batch_mode"] = False
+        with open(r"config/notify_config.json", "w") as f:
+            json.dump(cfg, f)
+    except: pass
+    
+    # 2. Borrar video
+    video_path = "C:/Users/Angel/Desktop/prueba/incidencias.mp4"
+    try:
+        if os.path.exists(video_path):
+            os.remove(video_path)
+    except: pass
+
+    # 3. Recopilar alertas de los ultimos 3 minutos
+    hace_15_min = datetime.now() - timedelta(minutes=15)
+    recientes = db.query(Hallazgo).filter(Hallazgo.fecha_creacion >= hace_15_min).all()
+    
+    resumen_texto = ""
+    if len(recientes) > 0:
+        resumen_texto = chr(10).join([f"• {r.categoria} ({r.fecha_creacion.strftime('%H:%M:%S')})" for r in recientes])
+    else:
+        resumen_texto = "Ninguna incidencia grave detectada."
+
+    # 4. Enviar WA
+    phone = cfg.get("wa_phone", "+5215584073442") if 'cfg' in locals() else "+5215584073442"
+    
+    lineas = [
+        "📊 *RESUMEN DE GRABACIÓN LOTE IVOA*",
+        "",
+        "Las siguientes incidencias fueron detectadas durante el periodo de monitoreo:",
+        "",
+        resumen_texto,
+        "",
+        "✅ Memoria de video liberada."
+    ]
+    msg = chr(10).join(lineas)
+    
+    try:
+        send_whatsapp_message(msg, phone=phone)
+    except Exception as e:
+        print("Error mandando wa:", e)
+        pass
+    
+    return {"status": "success", "alertas": len(recientes)}
+
+@router.get("/batch_progress_proxy")
+def batch_progress_proxy():
+    import requests
+    try:
+        res = requests.get("http://localhost:5000/api/batch_progress", timeout=2)
+        return res.json()
+    except Exception as e:
+        return {"status": "error", "progress": 0, "elapsed_seconds": 0}

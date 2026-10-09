@@ -8,8 +8,8 @@ import supervision as sv
 from ultralytics import YOLO
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_BASE_PATH = os.path.join(BASE_DIR, "yolov8n.pt")
-MODEL_CUSTOM_PATH = os.path.join(BASE_DIR, "yolov8_ivoa_v2.pt")
+MODEL_BASE_PATH = os.path.join(BASE_DIR, "models", "yolov8n.pt")
+MODEL_CUSTOM_PATH = os.path.join(BASE_DIR, "models", "yolov8_ivoa_v2.pt")
 
 def extract_color_signature(frame, bbox):
     """Extrae una huella digital matemática basada en los colores de la ropa (torso superior)"""
@@ -46,6 +46,11 @@ class IVOAVisionEngine:
                     px1, py1, px2, py2 = detections.xyxy[idx]
                     pcx, pcy = (px1 + px2)/2, (py1 + py2)/2
                     
+                    
+                    zona_izq = self.alert_config.get('zona_izquierda', True)
+                    zona_der = self.alert_config.get('zona_derecha', True)
+                    if pcx < self.width / 2 and not zona_izq: continue
+                    if pcx >= self.width / 2 and not zona_der: continue
                     best_tid = None
                     min_dist = float('inf')
                     found_inside = False
@@ -88,11 +93,11 @@ class IVOAVisionEngine:
         self.height = height
         self.FRAME_SKIP = frame_skip
         
-        self.model_base = YOLO(MODEL_BASE_PATH if os.path.exists(MODEL_BASE_PATH) else "yolov8n.pt") # Rastreador universal
-        self.model_custom = YOLO(os.path.join(BASE_DIR, "yolov8_ivoa_v5.pt")) # Especialista en Audífonos, Celular, Uniforme, Comida
-        self.model_screens = YOLO(os.path.join(BASE_DIR, "yolov8_ivoa_v7.pt")) # Especialista en Pantallas y Páginas No Autorizadas
-        self.model_grooming_cash = YOLO(os.path.join(BASE_DIR, "yolov8_ivoa_v8.pt") if os.path.exists(os.path.join(BASE_DIR, "yolov8_ivoa_v8.pt")) else self.model_custom) # Especialista en Arreglo Personal y Billetes
-        self.model_v9 = YOLO(os.path.join(BASE_DIR, "yolov8_ivoa_v9.pt")) # Nuevo Especialista en Billetes, Llaves y Situación Atípica
+        self.model_base = YOLO(MODEL_BASE_PATH if os.path.exists(MODEL_BASE_PATH) else "models", "yolov8n.pt") # Rastreador universal
+        self.model_custom = YOLO(os.path.join(BASE_DIR, "models", "yolov8_ivoa_v5.pt")) # Especialista en Audífonos, Celular, Uniforme, Comida
+        self.model_screens = YOLO(os.path.join(BASE_DIR, "models", "yolov8_ivoa_v7.pt")) # Especialista en Pantallas y Páginas No Autorizadas
+        self.model_grooming_cash = YOLO(os.path.join(BASE_DIR, "models", "yolov8_ivoa_v8.pt") if os.path.exists(os.path.join(BASE_DIR, "models", "yolov8_ivoa_v8.pt")) else self.model_custom) # Especialista en Arreglo Personal y Billetes
+        self.model_v9 = YOLO(os.path.join(BASE_DIR, "models", "yolov8_ivoa_v9.pt")) # Nuevo Especialista en Billetes, Llaves y Situación Atípica
         
         # 2. Configuración Espacial
         self.modulo_polygon = np.array([[0, 0], [width, 0], [width, height//2], [0, height//2]])
@@ -109,10 +114,12 @@ class IVOAVisionEngine:
         # 3. Módulos de Procesamiento y Anotación
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            self.custom_polygon_points = None
+
             self.tracker = sv.ByteTrack(
                 track_activation_threshold=0.55,
                 lost_track_buffer=180,
-                minimum_matching_threshold=0.50,
+                minimum_matching_threshold=0.25,
                 frame_rate=30
             )
 
@@ -210,7 +217,7 @@ class IVOAVisionEngine:
             import json
             import os
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cfg_path = os.path.join(base_dir, "notify_config.json")
+            cfg_path = os.path.join(base_dir, "config", "notify_config.json")
             if os.path.exists(cfg_path):
                 with open(cfg_path, "r") as f:
                     cfg = json.load(f)
@@ -220,6 +227,18 @@ class IVOAVisionEngine:
                     self.alert_config["incidencia_audifonos"] = cfg.get("enable_audifonos", True)
                     self.alert_config["incidencia_paginas"] = cfg.get("enable_paginas", True)
                     self.alert_config["incidencia_arreglo_personal"] = cfg.get("enable_arreglo", True)
+                    self.alert_config["zona_izquierda"] = cfg.get("zona_izquierda", True)
+                    self.alert_config["zona_derecha"] = cfg.get("zona_derecha", True)
+                    
+                    poly_data = cfg.get("custom_polygon", None)
+                    if poly_data and len(poly_data) >= 3:
+                        pts = []
+                        for p in poly_data:
+                            pts.append([int(p['x'] * self.width), int(p['y'] * self.height)])
+                        import numpy as np
+                        self.custom_polygon_points = np.array(pts, np.int32)
+                    else:
+                        self.custom_polygon_points = None
                     self.alert_config["incidencia_situacion_atipica"] = cfg.get("enable_atipica", True)
                     self.alert_config["incidencia_dinero"] = cfg.get("enable_dinero", True)
                     self.alert_config["incidencia_uniforme"] = cfg.get("enable_vestimenta", True)
@@ -266,7 +285,7 @@ class IVOAVisionEngine:
                         if conf >= 0.04:
                             phones_idx.append(i)
                     else: # Celular lejos (perfil / escritorio)
-                        if conf >= 0.12:
+                        if conf >= 0.35:
                             phones_idx.append(i)
                             
             phones_base = detections_base_all[phones_idx] if len(phones_idx) > 0 else sv.Detections.empty()
@@ -303,11 +322,11 @@ class IVOAVisionEngine:
                 food_base.class_id = np.array([4] * len(food_base))
             
             # Inferencia con modelo especialista en vestimenta y accesorios (v5)
-            result_custom = self.model_custom(frame, verbose=False, imgsz=640, conf=0.03)[0]
+            result_custom = self.model_custom(frame, verbose=False, imgsz=640, conf=0.05)[0]
             detections_custom_raw = sv.Detections.from_ultralytics(result_custom)
 
             # Inferencia con modelo especialista en pantallas y billetes (v7)
-            result_screens = self.model_screens(frame, verbose=False, imgsz=640, conf=0.005)[0]
+            result_screens = self.model_screens(frame, verbose=False, imgsz=640, conf=0.05)[0]
             detections_screens_raw = sv.Detections.from_ultralytics(result_screens)
             v7_boxes = []
             v7_classes = []
@@ -316,51 +335,25 @@ class IVOAVisionEngine:
             # Detección de Billetes v7 — APAGADA. Ahora usa v9.
 
 
-            # Detección de Pantallas No Autorizadas
-            # Usar modelo base (COCO) para saber exactamente dónde hay monitores reales y evitar cajas de cartón
+            # Deteccion de Pantallas No Autorizadas
+            # Usar modelo base (COCO) para saber exactamente donde hay monitores reales
             monitores_reales = detections_base_all[np.isin(detections_base_all.class_id, [62, 63])].xyxy
             
             for b in monitores_reales:
-                if b[0] < self.width * 0.65:
-                    bx1, by1, bx2, by2 = map(int, b)
-                    # Filtro de tamaño: los monitores reales no ocupan la mitad de la cámara
-                    bw, bh = bx2 - bx1, by2 - by1
-                    if bw > self.width * 0.45 or bh > self.height * 0.45:
-                        continue
-                        
-                    crop_s = frame[max(0, by1):min(self.height, by2), max(0, bx1):min(self.width, bx2)]
-                    if crop_s.size > 0:
-                        hsv_s = cv2.cvtColor(crop_s, cv2.COLOR_BGR2HSV)
-                        dark_ratio = np.sum(hsv_s[:, :, 2] < 70) / float(crop_s.shape[0] * crop_s.shape[1])
-                        mean_v = np.mean(hsv_s[:, :, 2])
-                        # Validacion 1: Matemática (Oscuridad)
-                        if dark_ratio >= 0.14 and mean_v < 145:
-                            v7_boxes.append([bx1, by1, bx2, by2])
-                            v7_classes.append(8)
-                            v7_confs.append(0.92)
+                bx1, by1, bx2, by2 = map(int, b)
 
             for cid, conf, bbox in zip(detections_screens_raw.class_id, detections_screens_raw.confidence, detections_screens_raw.xyxy):
-                if cid == 8 and bbox[0] < self.width * 0.65:
-                    # Filtro de tamaño para v7 también
-                    bw = bbox[2] - bbox[0]
-                    bh = bbox[3] - bbox[1]
-                    if bw > self.width * 0.45 or bh > self.height * 0.45:
-                        continue
-                        
-                    # Validacion 2: Si el modelo v7 tiene confianza alta (>30%), lo aceptamos.
-                    # Si tiene confianza baja (8% - 30%), SOLO lo aceptamos si está dentro de un monitor real de COCO.
-                    if conf >= 0.30:
-                        v7_boxes.append(bbox)
-                        v7_classes.append(8)
-                        v7_confs.append(conf)
-                    elif conf >= 0.08:
-                        for mb in monitores_reales:
-                            # Checar intersección
-                            if max(bbox[0], mb[0]) < min(bbox[2], mb[2]) and max(bbox[1], mb[1]) < min(bbox[3], mb[3]):
-                                v7_boxes.append(bbox)
-                                v7_classes.append(8)
-                                v7_confs.append(conf)
-                                break
+                if cid == 8:
+                    # Simplificacion: Confiamos en el modelo de paginas con un umbral medio (0.12)
+                    # Pero le ponemos un filtro de tamaño estricto para que no alucine con espaldas gigantes.
+                    # Una pagina de internet en un monitor nunca va a ocupar mas del 35% de la camara entera.
+                    if conf >= 0.04:
+                        bw = bbox[2] - bbox[0]
+                        bh = bbox[3] - bbox[1]
+                        if bw < self.width * 0.35 and bh < self.height * 0.35:
+                            v7_boxes.append(bbox)
+                            v7_classes.append(8)
+                            v7_confs.append(conf)
 
             if len(v7_boxes) > 0:
                 detections_screens = sv.Detections(
@@ -521,9 +514,9 @@ class IVOAVisionEngine:
                             continue
                     # Celular: reaccionar más rápido si está muy de frente/cerca a la cámara
                     if cid == 5:
-                        bw = bbox[2] - bbox[0]
-                        if bw > self.width * 0.12:
-                            req_conf = 0.04 # Mucho más sensible de cerca
+                        req_conf = 0.25 # Nivel optimo para detectar celulares reales rapido sin alucinar con la espalda
+                        
+
                             
                     if conf >= req_conf:
                         valid_idx.append(i)
@@ -548,7 +541,7 @@ class IVOAVisionEngine:
                     
                     crop_zoom = frame[zy1:zy2, zx1:zx2]
                     if crop_zoom.size > 0 and crop_zoom.shape[0] >= 50 and crop_zoom.shape[1] >= 50:
-                        res_zoom = self.model_custom(crop_zoom, verbose=False, imgsz=640, conf=0.03)[0]
+                        res_zoom = self.model_custom(crop_zoom, verbose=False, imgsz=640, conf=0.05)[0]
                         if len(res_zoom.boxes) > 0:
                             for zbox in res_zoom.boxes:
                                 zcid = int(zbox.cls[0])
@@ -667,9 +660,8 @@ class IVOAVisionEngine:
                             uniform_classes.append(9) # uniforme_incompleto
                             uniform_confs.append(0.92)
                         else:
-                            uniform_boxes.append([px1, py1, px2, py2])
-                            uniform_classes.append(14) # uniforme_completo
-                            uniform_confs.append(0.92)
+                            # Ignoramos por completo el uniforme completo a peticion del usuario (no agregamos cajas vacias)
+                            pass
 
             if len(uniform_boxes) > 0:
                 detections_uniform = sv.Detections(
@@ -752,6 +744,34 @@ class IVOAVisionEngine:
                         keep_idx.append(idx)
                 detections = detections[keep_idx] if len(keep_idx) > 0 else sv.Detections.empty()
             
+                        # --- FILTRO ESPACIAL DE ZONAS (NUEVO GEOFENCING) ---
+            if len(detections) > 0:
+                keep_zones = []
+                zona_izq = self.alert_config.get('zona_izquierda', True)
+                zona_der = self.alert_config.get('zona_derecha', True)
+                mid_x = self.width / 2
+                
+                if self.custom_polygon_points is not None:
+                    for idx, bbox in enumerate(detections.xyxy):
+                        pcx = (bbox[0] + bbox[2]) / 2.0
+                        pcy = (bbox[1] + bbox[3]) / 2.0
+                        # Permitir a los humanos (cid 0) ser seguidos en toda la camara (solo ignoramos los objetos)
+                        cid = detections.class_id[idx]
+                        if cid != 0:
+                            is_inside = cv2.pointPolygonTest(self.custom_polygon_points, (float(pcx), float(pcy)), False) >= 0
+                            if not is_inside: continue
+                        keep_zones.append(idx)
+                else:
+                    for idx, cid in enumerate(detections.class_id):
+                        if cid != 0:
+                            px1, _, px2, _ = detections.xyxy[idx]
+                            pcx = (px1 + px2) / 2
+                            if pcx < mid_x and not zona_izq: continue
+                            if pcx >= mid_x and not zona_der: continue
+                        keep_zones.append(idx)
+                
+                detections = detections[keep_zones] if len(keep_zones) > 0 else sv.Detections.empty()
+
             # --- FILTRO MAESTRO VISUAL ---
             # Si una alerta está apagada (False) en alert_config, quitamos su recuadro para que no salga en pantalla
             MAPA_CLASES_ALERTAS = {
@@ -856,7 +876,7 @@ class IVOAVisionEngine:
                 if "celular" not in self.detection_start_times:
                     self.detection_start_times["celular"] = now_ts
                 self.last_seen_times["celular"] = now_ts
-                if now_ts - self.detection_start_times["celular"] >= self.DEBOUNCE_SECONDS:
+                if now_ts - self.detection_start_times["celular"] >= 0.5: # 0.5 seg para celular real
                     if now_ts - self.last_alert_times.get("celular", 0) >= self.ALERT_COOLDOWN:
                         for c_id in self._get_culprits(5, detections, detections_tracked):
                             alerts.append(("incidencia_celular", f"ALERTA: {c_id} detectado(a) usando dispositivo móvil (Celular).", "warning"))
@@ -1221,6 +1241,22 @@ class IVOAVisionEngine:
             10: "arreglo_personal",
             11: "situacion_atipica"
         }
+        
+        if len(detections) > 0:
+            # Filtro visual para uniforme incompleto: 
+            # Permitir que se vea cuando lo esta detectando y cuando emite el ticket.
+            # Ocultarlo una vez que paso el aviso para que no robe espacio en la pantalla.
+            keep_idx = []
+            for i, cid in enumerate(detections.class_id):
+                if cid == 9:
+                    tiempo_desde_alerta = now_ts - self.last_alert_times.get("uniforme", 0)
+                    # Si ya lanzo la alerta (hace mas de 3 segundos para que se vea el [TICKET EMITIDO])
+                    # y esta en periodo de cooldown (hasta 5 minutos oculto)
+                    if 3.0 < tiempo_desde_alerta < 300.0:
+                        continue
+                keep_idx.append(i)
+            detections = detections[keep_idx] if len(keep_idx) > 0 else sv.Detections.empty()
+
         labels = []
         for class_id, confidence in zip(detections.class_id, detections.confidence):
             name = CLASS_NAMES.get(class_id, f"obj_{class_id}")
@@ -1253,6 +1289,23 @@ class IVOAVisionEngine:
         annotated = self.box_annotator.annotate(scene=annotated, detections=detections)
         annotated = self.label_annotator.annotate(scene=annotated, detections=detections, labels=labels)
         
+        # DIBUJAR GEOFENCING / ZONAS
+        if self.custom_polygon_points is not None:
+            # 1. Oscurecer de forma segura la zona inactiva usando addWeighted PRIMERO
+            mask = np.zeros(annotated.shape[:2], dtype=np.uint8)
+            # Dibujar la mascara con anti-aliasing para reducir serruchos en la frontera
+            cv2.fillPoly(mask, [self.custom_polygon_points], 255, lineType=cv2.LINE_AA)
+            black_image = np.zeros_like(annotated)
+            darkened = cv2.addWeighted(annotated, 0.4, black_image, 0.6, 0)
+            annotated = np.where(mask[:, :, None] == 0, darkened, annotated)
+            
+            # 2. Dibujar el poligono del usuario DESPUES del oscurecimiento, con Anti-Aliasing
+            # Si lo dibujamos antes, la mascara recorta la linea y la hace ver pixeleada/horrible.
+            cv2.polylines(annotated, [self.custom_polygon_points], isClosed=True, color=(0, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+            
+            # Textos eliminados a peticion del usuario para tener vision limpia
+        # (Fallback eliminado a peticion del usuario, si no hay poligono todo es zona activa por defecto)
+
         if hasattr(detections_tracked, 'tracker_id') and detections_tracked.tracker_id is not None:
             annotated = self.box_annotator.annotate(scene=annotated, detections=detections_tracked)
             

@@ -5,40 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IVOA - Plataforma de Inteligencia Operativa</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/dashboard.css?v=21">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=33">
     <!-- Iconos SVG (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        .nav-tabs {
-            align-items: center;
-            padding: 1rem 2rem;
-        }
-        .nav-tab {
-            padding: 0.6rem 1rem;
-            margin-right: 0.5rem;
-            border-radius: 9999px;
-        }
-        .nav-tab.active {
-            padding: 0.6rem 1.2rem;
-        }
-    </style>
+
 </head>
 <body>
-    <!-- Background Mesh -->
-    <div class="bg-mesh">
-        <div class="mesh-orb-1"></div>
-        <div class="mesh-orb-2"></div>
-        <div class="mesh-orb-3"></div>
-    </div>
+    
 
     <!-- Header Principal -->
     <header class="top-header">
         <div class="header-left">
-            <div class="brand-logo">
-                izzi <span class="brand-ivoa">IVOA</span>
+            <div class="brand-logo-custom" style="background: #000000; padding: 0.5rem 1.2rem; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05);">
+                <div style="position: relative; width: 110px; height: 35px; margin-right: 5px;">
+                    <!-- Cyan abajo a la izquierda -->
+                    <div style="position: absolute; bottom: 7px; left: 5px; width: 7px; height: 7px; background: #37b7b6;"></div>
+                    
+                    <!-- Letras izz (sin la i final para evitar el bug del navegador) -->
+                    <div style="position: absolute; bottom: 4px; left: 15px; font-family: 'Arial Black', sans-serif; font-size: 28px; color: white; line-height: 1; letter-spacing: -1.5px; white-space: nowrap;">&#305;zz</div>
+                    
+                    <!-- Naranja EXACTAMENTE sobre la primera i -->
+                    <div style="position: absolute; top: 3px; left: 17px; width: 7.5px; height: 7.5px; background: #f17b20;"></div>
+                    
+                    <!-- Segunda 'i' renderizada de forma nativa en su propio bloque para evitar bugs -->
+                    <div style="position: absolute; bottom: 4px; left: 56px; font-family: 'Arial Black', sans-serif; font-size: 28px; color: white; line-height: 1; white-space: nowrap;">&#305;</div>
+
+                    <!-- Amarillo EXACTAMENTE sobre la ultima i -->
+                    <div style="position: absolute; top: 3px; left: 58px; width: 7.5px; height: 7.5px; background: #f3d400;"></div>
+                    
+                    <!-- Rosa posicionado arriba a la derecha -->
+                    <div style="position: absolute; top: 3px; left: 72px; width: 7.5px; height: 7.5px; background: #dc0d76;"></div>
+                </div>
+                <span style="background: linear-gradient(135deg, #ff0055, #c80032); color: #fff; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 6px; font-weight: 800; letter-spacing: 1px; box-shadow: 0 2px 10px rgba(255,0,85,0.4);">IVOA</span>
             </div>
             <div class="header-titles">
-                <h1>Plataforma de Inteligencia Operativa <span class="badge-piloto">Piloto v1.0</span></h1>
+                <h1 style="color: #cbd5e1; font-weight: 700; font-size: 1.5rem; letter-spacing: -0.3px; margin: 0; padding-bottom: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Plataforma de Inteligencia Operativa</h1>
                 <p>📍 Sucursal izzi San Ángel | CDMX Sur</p>
             </div>
         </div>
@@ -85,6 +86,30 @@
                 <select style="background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none;">
                     <option>Módulo de Atención (Cámara IP Principal)</option>
                 </select>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <span id="recordingStatus" style="display: none; color: #f59e0b; font-size: 0.85rem; font-weight: bold; animation: pulse 1.5s infinite;">REC (Modo Batch)</span>
+                    <button id="btnGrabar" onclick="iniciarGrabacionBatch()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);">
+                        <i data-lucide="video" style="width:16px; height:16px; margin-right:5px; vertical-align:middle;"></i> <span style="vertical-align:middle;">Grabar incidencias</span>
+                    </button>
+                    
+                    <!-- NUEVA BARRA DE PROGRESO DE ANALISIS -->
+                    <div id="analysisContainer" style="display: none; flex-direction: column; width: 200px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #38bdf8; font-weight: bold; margin-bottom: 4px;">
+                            <span id="analysisText">Analizando IA...</span>
+                            <span id="analysisTime">0.0s</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; border: 1px solid rgba(56,189,248,0.3);">
+                            <div id="analysisBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #2563eb); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="btnEnviarAlertas" onclick="showModalAlertas()" style="display: none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">
+                        <i data-lucide="send" style="width:16px; height:16px; margin-right:5px; vertical-align:middle;"></i> <span style="vertical-align:middle;">Enviar alertas</span>
+                    </button>
+                </div>
+                
+                
+                </div>
             </div>
 
             <div class="video-container">
@@ -92,6 +117,12 @@
                     <div class="dot-green"></div> Módulo de Atención (Live) <span style="color:#f59e0b; margin-left:0.5rem;">| Análisis Exclusivo de Cámara Activa</span>
                 </div>
                 <img id="live-video-feed" src="http://localhost:5000/video_feed" onerror="this.onerror=null; this.src='/static/placeholder.jpg';">
+                <canvas id="polygon-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: none; cursor: crosshair;"></canvas>
+                <div id="polygon-controls" style="position: absolute; top: 15px; right: 15px; display: none; z-index: 20; background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 8px; align-items: center; gap: 10px; border: 1px solid var(--brand-blue); box-shadow: 0px 4px 12px rgba(0,0,0,0.5);">
+                    <span style="color: white; font-weight: 600; font-size: 0.9rem;">Dibuja la zona (Click para aadir puntos)</span>
+                    <button onclick="savePolygon()" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(37,99,235,0.3); text-shadow: 0 1px 2px rgba(0,0,0,0.2); border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">Guardar Zona</button>
+                    <button onclick="cancelPolygon()" style="background: transparent; color: white; border: 1px solid white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">Cancelar</button>
+                </div>
                 <div id="video-error" style="position:absolute; display:none; flex-direction:column; align-items:center; gap:1rem; color:white;">
                     <i data-lucide="alert-circle" style="width:48px; height:48px; color:var(--brand-red)"></i>
                     <h3 style="margin:0;">Acceso a Cámara Móvil Requerido</h3>
@@ -157,18 +188,18 @@
                 <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;">
                     <thead>
                         <tr>
-                            <th style="padding: 0.75rem; background: #f09321; color: white; border-radius: 8px 0 0 0;">Sucursal</th>
-                            <th style="padding: 0.75rem; background: #137e38; color: white;">Gerente en Turno</th>
-                            <th style="padding: 0.75rem; background: #7c3aed; color: white;">Apertura tardía</th>
-                            <th style="padding: 0.75rem; background: #be123c; color: white;">Código de vestimenta</th>
-                            <th style="padding: 0.75rem; background: #b91c1c; color: white;">Uso de celulares</th>
-                            <th style="padding: 0.75rem; background: #c2410c; color: white;">Situación atípica</th>
-                            <th style="padding: 0.75rem; background: #0369a1; color: white;">Billetes dinero</th>
-                            <th style="padding: 0.75rem; background: #b45309; color: white;">Consumo de alimentos</th>
-                            <th style="padding: 0.75rem; background: #9a3412; color: white;">Uso de audífonos</th>
-                            <th style="padding: 0.75rem; background: #6d28d9; color: white;">Páginas no autorizadas</th>
-                            <th style="padding: 0.75rem; background: #a21caf; color: white;">Arreglo personal</th>
-                            <th style="padding: 0.75rem; background: #060b14; color: white; border-radius: 0 8px 0 0;">Total</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(148,163,184,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #94a3b8; border-radius: 8px 0 0 0;">Sucursal</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(59,130,246,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #3b82f6;">Gerente en Turno</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(168,85,247,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #a855f7;">Apertura tardía</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(244,63,94,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #f43f5e;">Código de vestimenta</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(239,68,68,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #ef4444;">Uso de celulares</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(249,115,22,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #f97316;">Situación atípica</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(14,165,233,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #0ea5e9;">Billetes dinero</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(245,158,11,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #f59e0b;">Consumo de alimentos</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(20,184,166,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #14b8a6;">Uso de audífonos</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(99,102,241,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #6366f1;">Páginas no autorizadas</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(217,70,239,0.3), transparent); color: #f8fafc; font-weight: 700; font-size: 0.85rem; border-bottom: 3px solid #d946ef;">Arreglo personal</th>
+                            <th style="padding: 1rem 0.75rem; background: linear-gradient(to top, rgba(16,185,129,0.4), transparent); color: #f8fafc; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; border-bottom: 3px solid #10b981; border-radius: 0 8px 0 0;">Total</th>
                         </tr>
                     </thead>
                     <tbody id="summary-table-body">
@@ -231,7 +262,7 @@
                             <span id="train-zip-text">Subir Archivo .zip</span>
                         </label>
 
-                        <button onclick="startTrainingSimulation()" id="btn-start-train" style="background: var(--brand-blue); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='var(--brand-blue)'">
+                        <button onclick="startTrainingSimulation()" id="btn-start-train" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(37,99,235,0.3); text-shadow: 0 1px 2px rgba(0,0,0,0.2); border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='var(--brand-blue)'">
                             <i data-lucide="cpu" style="display:inline-block; width:16px; height:16px; vertical-align:middle; margin-right:5px;"></i> Entrenar Objeto
                         </button>
                     </div>
@@ -288,7 +319,7 @@
                     <input type="text" id="config-gerente" placeholder="Ej. Juan Pérez" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-size: 1rem;">
                 </div>
                 
-                <button onclick="saveLocalConfig()" style="background: var(--brand-blue); color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">
+                <button onclick="saveLocalConfig()" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(37,99,235,0.3); text-shadow: 0 1px 2px rgba(0,0,0,0.2); border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">
                     Guardar Configuración
                 </button>
             </div>
@@ -390,10 +421,30 @@
                             <input type="checkbox" id="chk-apertura" checked>
                         </div>
                     </div>
+                    <!-- ZONAS IZQUIERDA Y DERECHA -->
+                    <div style="background:rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border:1px solid var(--border); grid-column: span 3;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="display:block; margin-bottom: 0.2rem;">Zona Poligonal Personalizada</strong>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">Dibuja sobre el video la zona exacta donde quieres detectar incidencias. (Ignorara el resto).</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button onclick="startPolygonDraw()" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; min-width: 120px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+                                    Dibujar Zona
+                                </button>
+                                <button onclick="clearPolygon()" style="background: rgba(255,255,255,0.05); color: #e2e8f0; font-weight: 500; border: 1px solid rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; min-width: 90px; transition: all 0.2s;">
+                                    Borrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+
                 </div>
                 
                 <div style="margin-top: 1.5rem; text-align: right;">
-                    <button onclick="saveAppConfig(this)" style="background: var(--brand-blue); color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <button onclick="saveAppConfig(this)" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 2rem; border-radius: 8px; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(37,99,235,0.3); text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
                         Aplicar Ajustes
                     </button>
                 </div>
@@ -478,6 +529,190 @@
         // API de Tickets
         const API_URL = '/v1/findings';
         
+        // Lgica de Zona Poligonal
+        let customPolygon = [];
+        let drawingPolygon = false;
+        const canvas = document.getElementById('polygon-canvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+
+        function startPolygonDraw() {
+            switchTab('tab-live', document.querySelector('.nav-tab'));
+            const videoFeed = document.getElementById('live-video-feed');
+            
+            canvas.width = videoFeed.clientWidth;
+            canvas.height = videoFeed.clientHeight;
+            canvas.style.display = 'block';
+            document.getElementById('polygon-controls').style.display = 'flex';
+            
+            customPolygon = [];
+            drawingPolygon = true;
+            drawCanvas();
+        }
+
+        let draggingPointIndex = -1;
+        const POINT_RADIUS = 10;
+
+        if(canvas) {
+            canvas.addEventListener('mousedown', function(e) {
+                if(!drawingPolygon) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Checar si hicimos clic sobre un punto existente para arrastrarlo
+                for(let i = 0; i < customPolygon.length; i++) {
+                    const px = customPolygon[i].x * canvas.width;
+                    const py = customPolygon[i].y * canvas.height;
+                    const dist = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
+                    if(dist <= POINT_RADIUS * 1.5) {
+                        draggingPointIndex = i;
+                        return; // No agregamos uno nuevo, solo arrastramos
+                    }
+                }
+                
+                // Si no tocamos un punto, agregamos uno nuevo
+                customPolygon.push({
+                    x: x / canvas.width,
+                    y: y / canvas.height
+                });
+                drawCanvas();
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                if(!drawingPolygon) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Cambiar el cursor visualmente si pasamos sobre un punto
+                let isHovering = false;
+                for(let i = 0; i < customPolygon.length; i++) {
+                    const px = customPolygon[i].x * canvas.width;
+                    const py = customPolygon[i].y * canvas.height;
+                    if(Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2)) <= POINT_RADIUS * 1.5) {
+                        isHovering = true;
+                        break;
+                    }
+                }
+                
+                if(draggingPointIndex !== -1) {
+                    canvas.style.cursor = 'grabbing';
+                    // Actualizar coordenadas mientras se arrastra
+                    customPolygon[draggingPointIndex].x = x / canvas.width;
+                    customPolygon[draggingPointIndex].y = y / canvas.height;
+                    drawCanvas();
+                } else {
+                    canvas.style.cursor = isHovering ? 'grab' : 'crosshair';
+                }
+            });
+
+            canvas.addEventListener('mouseup', function(e) {
+                draggingPointIndex = -1;
+                if(drawingPolygon) canvas.style.cursor = 'crosshair';
+            });
+            
+            canvas.addEventListener('mouseleave', function(e) {
+                draggingPointIndex = -1; // Soltar si el mouse sale del canvas
+            });
+        }
+
+        function drawCanvas() {
+            if(!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if(customPolygon.length === 0) return;
+
+            // Dibujar capa semi-oscura afuera
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Cortar la forma del poligono para que se vea claro adentro
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.moveTo(customPolygon[0].x * canvas.width, customPolygon[0].y * canvas.height);
+            for(let i=1; i<customPolygon.length; i++) {
+                ctx.lineTo(customPolygon[i].x * canvas.width, customPolygon[i].y * canvas.height);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Dibujar lineas y puntos
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.beginPath();
+            ctx.moveTo(customPolygon[0].x * canvas.width, customPolygon[0].y * canvas.height);
+            for(let i=1; i<customPolygon.length; i++) {
+                ctx.lineTo(customPolygon[i].x * canvas.width, customPolygon[i].y * canvas.height);
+            }
+            if(customPolygon.length > 2) ctx.closePath();
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Puntos interactivos
+            ctx.fillStyle = '#ff0055';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            for(let i=0; i<customPolygon.length; i++) {
+                ctx.beginPath();
+                ctx.arc(customPolygon[i].x * canvas.width, customPolygon[i].y * canvas.height, 7, 0, Math.PI*2);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function cancelPolygon() {
+            drawingPolygon = false;
+            canvas.style.display = 'none';
+            document.getElementById('polygon-controls').style.display = 'none';
+        }
+
+        async function savePolygon() {
+            if(customPolygon.length < 3) {
+                alert('Dibuja al menos 3 puntos para crear una zona.');
+                return;
+            }
+            drawingPolygon = false;
+            canvas.style.display = 'none';
+            document.getElementById('polygon-controls').style.display = 'none';
+            
+            // Guardar en la API
+            let existingConfig = {};
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+            
+            existingConfig.custom_polygon = customPolygon;
+            try {
+                await fetch('/v1/notify_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(existingConfig)
+                });
+                alert('Zona guardada. Revisa tu camara en vivo para ver la nueva ZONA ACTIVA iluminada y la inactiva oscurecida.');
+            } catch(e) {
+                console.error(e);
+                alert('Error al guardar la zona.');
+            }
+        }
+
+        async function clearPolygon() {
+            if(!confirm('Deseas borrar la zona personalizada y volver a las zonas Izquierda/Derecha tradicionales?')) return;
+            let existingConfig = {};
+            try {
+                const res = await fetch('/v1/notify_config');
+                existingConfig = await res.json();
+            } catch(e) {}
+            existingConfig.custom_polygon = [];
+            try {
+                await fetch('/v1/notify_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(existingConfig)
+                });
+                alert('Zona Poligonal borrada.');
+            } catch(e) {}
+        }
+
         // Cargar config de notificaciones al iniciar
         fetch('/v1/notify_config')
             .then(r => r.json())
@@ -782,6 +1017,8 @@
 
                 // Load App Config checkboxes
                 const chkApertura = document.getElementById('chk-apertura'); if (chkApertura && data.enable_apertura !== undefined) chkApertura.checked = data.enable_apertura;
+                const chkZonaIzq = document.getElementById('chk-zona-izq'); if (chkZonaIzq && data.zona_izquierda !== undefined) chkZonaIzq.checked = data.zona_izquierda;
+                const chkZonaDer = document.getElementById('chk-zona-der'); if (chkZonaDer && data.zona_derecha !== undefined) chkZonaDer.checked = data.zona_derecha;
                 const chkVestimenta = document.getElementById('chk-vestimenta'); if (chkVestimenta && data.enable_vestimenta !== undefined) chkVestimenta.checked = data.enable_vestimenta;
                 const chkCelulares = document.getElementById('chk-celulares'); if (chkCelulares && data.enable_celulares !== undefined) chkCelulares.checked = data.enable_celulares;
                 const chkAlimentos = document.getElementById('chk-alimentos'); if (chkAlimentos && data.enable_alimentos !== undefined) chkAlimentos.checked = data.enable_alimentos;
@@ -824,6 +1061,8 @@
             const payload = {
                 ...existingConfig,
                 enable_apertura: document.getElementById('chk-apertura') ? document.getElementById('chk-apertura').checked : true,
+                zona_izquierda: document.getElementById('chk-zona-izq') ? document.getElementById('chk-zona-izq').checked : true,
+                zona_derecha: document.getElementById('chk-zona-der') ? document.getElementById('chk-zona-der').checked : true,
                 enable_vestimenta: document.getElementById('chk-vestimenta') ? document.getElementById('chk-vestimenta').checked : true,
                 enable_celulares: document.getElementById('chk-celulares') ? document.getElementById('chk-celulares').checked : true,
                 enable_alimentos: document.getElementById('chk-alimentos') ? document.getElementById('chk-alimentos').checked : true,
@@ -1077,7 +1316,109 @@
         loadConfig();
         fetchFindings();
         setInterval(fetchFindings, 3000);
-    </script>
+    
+function iniciarGrabacionBatch() {
+    const btn = document.getElementById('btnGrabar');
+    const status = document.getElementById('recordingStatus');
+    
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    status.style.display = 'block';
+    status.innerText = 'Grabando... (10 min)';
+    
+    // Llamar al Edge Sensor (puerto 8001 /start_batch_proxy -> puerto 5000 /api/start_batch)
+    fetch('/v1/events/start_batch_proxy', {
+        method: 'POST'
+    }).then(res => res.json()).then(data => {
+        // Temporizador de 10 minutos (600 segundos)
+        let timeLeft = 600; 
+        let timerId = setInterval(() => {
+            timeLeft--;
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            status.innerText = 'Grabando... (' + m + ':' + (s < 10 ? '0' : '') + s + ')';
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                status.style.display = 'none';
+                btn.style.display = 'none';
+                
+                // Mostrar barra de progreso
+                document.getElementById('analysisContainer').style.display = 'flex';
+                comenzarMonitoreoAnalisis();
+            }
+        }, 1000);
+    }).catch(err => {
+        alert("Error al iniciar grabacion: " + err);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        status.style.display = 'none';
+    });
+}
+
+function comenzarMonitoreoAnalisis() {
+    let pollId = setInterval(() => {
+        // Consultar el endpoint de progreso directamente al sensor (puerto 5000)
+        let sensorUrl = '/v1/events/batch_progress_proxy';
+        
+        fetch(sensorUrl)
+            .then(res => res.json())
+            .then(data => {
+                let bar = document.getElementById('analysisBar');
+                let txtTime = document.getElementById('analysisTime');
+                let txtMsg = document.getElementById('analysisText');
+                
+                bar.style.width = data.progress + '%';
+                txtTime.innerText = data.elapsed_seconds + 's';
+                
+                if (data.status === 'done') {
+                    clearInterval(pollId);
+                    txtMsg.innerText = '¡Listo! (' + data.progress + '%)';
+                    bar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    document.getElementById('btnEnviarAlertas').style.display = 'block';
+                }
+            })
+            .catch(err => console.log("Esperando API de analisis...", err));
+    }, 1000);
+}
+
+function showModalAlertas() {
+    document.getElementById('modalAlertas').style.display = 'flex';
+}
+
+function confirmarEnvioAlertas() {
+    document.getElementById('modalAlertas').style.display = 'none';
+    const btnEnviar = document.getElementById('btnEnviarAlertas');
+    btnEnviar.innerText = 'Enviando...';
+    btnEnviar.disabled = true;
+    
+    fetch('/v1/events/trigger_batch', {
+        method: 'POST'
+    }).then(res => res.json()).then(data => {
+        alert("¡Resumen enviado con exito por WhatsApp y memoria de video liberada!");
+        btnEnviar.style.display = 'none';
+        btnEnviar.innerText = 'Enviar alertas';
+        btnEnviar.disabled = false;
+        
+        const btnGrabar = document.getElementById('btnGrabar');
+        btnGrabar.style.display = 'block';
+        btnGrabar.disabled = false;
+        btnGrabar.style.opacity = '1';
+    }).catch(err => alert("Error enviando: " + err));
+}
+</script>
+
+<!-- Modal de Confirmacion (Nivel Body) -->
+<div id="modalAlertas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; justify-content:center; align-items:center; flex-direction:column;">
+    <div style="background: #0f172a; border: 2px solid #38bdf8; padding: 2.5rem; border-radius: 16px; max-width: 450px; text-align: center; box-shadow: 0 0 30px rgba(56,189,248,0.4);">
+        <h3 style="color: white; font-size: 1.4rem; margin-bottom: 1rem;">¿Enviar resumen de alertas?</h3>
+        <p style="color: #94a3b8; font-size: 1rem; margin-bottom: 2rem;">La grabación de 1 minuto ha finalizado.<br><br>¿Deseas vaciar la memoria de video y disparar el reporte a WhatsApp ahora?</p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button onclick="document.getElementById('modalAlertas').style.display='none';" style="background: transparent; border: 2px solid #475569; color: #cbd5e1; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem;">Cancelar</button>
+            <button onclick="confirmarEnvioAlertas()" style="background: #10b981; border: none; color: white; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(16,185,129,0.4);">Confirmar y Enviar</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 

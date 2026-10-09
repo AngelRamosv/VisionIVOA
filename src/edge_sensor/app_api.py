@@ -30,7 +30,7 @@ def api_log_event(event_type, details, severity="info"):
             import json
             try:
                 BASE_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
-                config_path = os.path.join(BASE_DIR, "notify_config.json")
+                config_path = os.path.join(BASE_DIR, "config", "notify_config.json")
                 if os.path.exists(config_path):
                     with open(config_path, "r") as f:
                         cfg = json.load(f)
@@ -95,6 +95,7 @@ engine = None
 
 # Conexión a la cámara IP Hikvision
 CAMERA_URL = "rtsp://admin:QWERTY123@192.168.51.125:554/Streaming/Channels/302"
+#CAMERA_URL = "C:/Users/Angel/Desktop/paginas_no_autorizadas.mp4"
 
 class CameraReader:
     """Hilo dedicado EXCLUSIVAMENTE a extraer imágenes de la cámara a máxima velocidad con reconexión automática"""
@@ -125,6 +126,11 @@ class CameraReader:
                     self.frame = frame
                     self.new_frame = True
                     consecutive_failures = 0
+                    
+                    # --- FIX PARA VIDEOS MP4 LOCALES (EVITA QUE SE TRABE LA CPU) ---
+                    if isinstance(self.src, str) and self.src.lower().endswith('.mp4'):
+                        import time
+                        time.sleep(1.0 / 30.0) # Simular 30 FPS reales de camara
                 else:
                     consecutive_failures += 1
                     if consecutive_failures > 15:
@@ -185,6 +191,26 @@ def detection_thread():
             # 2. Delegar TODO el pensamiento (Detección, Reglas, Tracking) al motor
             annotated, alerts, sessions_to_update = engine.process_frame(frame, frame_count)
             
+            # --- LOGICA DE GRABACION BATCH ---
+            global is_batch_recording, batch_recording_endtime, batch_video_writer
+            if 'is_batch_recording' in globals() and is_batch_recording:
+                if time.time() > batch_recording_endtime:
+                    is_batch_recording = False
+                    if batch_video_writer:
+                        batch_video_writer.release()
+                        batch_video_writer = None
+                        
+                        # Lanzar el hilo de analisis post-grabacion
+                        video_path = "C:/Users/Angel/Desktop/prueba/incidencias.mp4"
+                        threading.Thread(target=offline_analyze_thread, args=(video_path,), daemon=True).start()
+                    # El disparo automatico fue removido a peticion del usuario.
+                else:
+                    if batch_video_writer is not None:
+                        # Asegurar tamao correcto
+                        resized = cv2.resize(frame, (1280, 720))
+                        batch_video_writer.write(resized)
+            # ----------------------------------
+            
             # 3. Procesar las Alertas devueltas por el motor
             for event_type, msg, severity in alerts:
                 if event_type == "finding_created":
@@ -241,6 +267,117 @@ def generate_frames():
         time.sleep(0.033)  # ~30 fps
 
 # --- Rutas Flask ---
+is_batch_recording = False
+batch_recording_endtime = 0
+batch_video_writer = None
+
+# Nuevas variables para benchmark de analisis
+offline_analysis_progress = 0
+offline_analysis_status = "idle"
+offline_start_time = 0
+offline_end_time = 0
+
+
+@app.route('/api/start_batch', methods=['POST'])
+def start_batch():
+    global is_batch_recording, batch_recording_endtime, batch_video_writer
+    import json
+    
+    # 1. Avisar al backend que bloquee WA
+    try:
+        BASE_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
+        config_path = os.path.join(BASE_DIR, "config", "notify_config.json")
+        with open(config_path, "r") as f:
+            cfg = json.load(f)
+        cfg["batch_mode"] = True
+        with open(config_path, "w") as f:
+            json.dump(cfg, f)
+    except: pass
+    
+    # 2. Crear carpeta y configurar VideoWriter
+    import os
+    folder = "C:/Users/Angel/Desktop/prueba"
+    os.makedirs(folder, exist_ok=True)
+    video_path = os.path.join(folder, "incidencias.mp4")
+    
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    batch_video_writer = cv2.VideoWriter(video_path, fourcc, 10.0, (1280, 720))
+    
+    # 3. Iniciar grabacion por 5 minutos (300 seg)
+    is_batch_recording = True
+    batch_recording_endtime = time.time() + 600
+    
+    return jsonify({"status": "recording_started"})
+
+
+@app.route('/api/batch_progress')
+def api_batch_progress():
+    global offline_analysis_progress, offline_analysis_status, offline_start_time, offline_end_time
+    import time
+    
+    elapsed = 0
+    if offline_analysis_status == "analyzing":
+        elapsed = time.time() - offline_start_time
+    elif offline_analysis_status == "done":
+        elapsed = offline_end_time - offline_start_time
+        
+    return jsonify({
+        "progress": offline_analysis_progress,
+        "status": offline_analysis_status,
+        "elapsed_seconds": round(elapsed, 1)
+    })
+
+def offline_analyze_thread(video_path):
+    global offline_analysis_progress, offline_analysis_status, offline_start_time, offline_end_time
+    import time
+    
+    offline_start_time = time.time()
+    offline_analysis_status = "analyzing"
+    offline_analysis_progress = 0
+    
+    cap = cv2.VideoCapture(video_path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if total_frames <= 0: total_frames = 1
+    
+    # Instanciar un motor temporal para simular el procesamiento real offline
+    from ivoa_engine import IVOAVisionEngine
+    offline_engine = IVOAVisionEngine(width=1280, height=720, frame_skip=60) # Modificado a 60 para velocidad X2
+    
+    f_count = 0
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret: break
+        
+        # Procesamos el cuadro y RECUPERAMOS las alertas
+        annotated_off, alerts_off, sessions_off = offline_engine.process_frame(frame, f_count)
+        
+        # Guardar las alertas encontradas en la base de datos para el resumen final
+        for event_type, msg, severity in alerts_off:
+            if event_type == "finding_created":
+                api_log_event("finding_created", {"queue_length": int(offline_engine.fila_count), "action_required": msg}, severity)
+            elif event_type == "queue_threshold_exceeded":
+                api_log_event("queue_threshold_exceeded", {"queue_size": int(offline_engine.fila_count), "message": msg}, severity)
+            elif event_type == "late_opening":
+                api_log_event("late_opening", {"message": msg}, severity)
+            elif event_type == "customer_abandonment":
+                api_log_event("customer_abandonment", {"tracker_id": 0, "message": msg}, severity)
+            elif event_type == "service_completed":
+                api_log_event("service_completed", {"message": msg}, severity)
+            elif event_type == "reid_success":
+                api_log_event("reid_success", {"message": msg}, severity)
+            else:
+                api_log_event(event_type, {"message": msg}, severity)
+                
+        f_count += 1
+        # Actualizamos el porcentaje cada ciertos frames para no saturar
+        if f_count % 5 == 0:
+            offline_analysis_progress = int((f_count / total_frames) * 100)
+            
+    cap.release()
+    offline_end_time = time.time()
+    offline_analysis_progress = 100
+    offline_analysis_status = "done"
+
 @app.route('/')
 def index():
     return render_template('index.html')

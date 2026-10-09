@@ -19,3 +19,13 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+# Pesos de modelos de IA
+*.pt
+*.onnx
+
+# Datasets
+dataset_v9/
+dataset*/
+
+# Configuraciones locales
+notify_config.json

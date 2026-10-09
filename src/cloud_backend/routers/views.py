@@ -16,7 +16,7 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 async def save_notify_config(request: Request):
     data = await request.json()
     import json
-    with open("notify_config.json", "w") as f:
+    with open(r"config/notify_config.json", "w") as f:
         json.dump(data, f)
     return {"status": "ok"}
 
@@ -24,7 +24,7 @@ async def save_notify_config(request: Request):
 def get_notify_config():
     import json
     try:
-        with open("notify_config.json", "r") as f:
+        with open(r"config/notify_config.json", "r") as f:
             return json.load(f)
     except:
         return {"wa_phone": "", "email": "angel.ramos@izzi.mx", "enable_wa": True, "enable_email": False}
@@ -87,18 +87,23 @@ def get_dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request=request, name="dashboard.html", context={"username": user.username})
 
 @router.get("/v1/findings")
-def get_findings(limit: int = 50, db: Session = Depends(get_db)):
+def get_findings(limit: int = 5000, db: Session = Depends(get_db)):
     from ..database import Evento
-    hallazgos = db.query(Hallazgo).order_by(Hallazgo.id.asc()).limit(limit).all()
+    hallazgos = db.query(Hallazgo).order_by(Hallazgo.id.desc()).limit(limit).all()
     resultado = []
+    # Optimizacion para evitar problema N+1
+    import json
+    evento_ids = [h.evento_id for h in hallazgos if h.evento_id]
+    eventos = db.query(Evento).filter(Evento.id.in_(evento_ids)).all() if evento_ids else []
+    evento_map = {e.id: e for e in eventos}
+    
     for h in hallazgos:
-        sucursal = "No Asignada"
-        gerente = "No Asignado"
+        sucursal = "Centro de Atención"
+        gerente = "Gerente en Turno"
         
         if h.evento_id:
-            evento = db.query(Evento).filter(Evento.id == h.evento_id).first()
+            evento = evento_map.get(h.evento_id)
             if evento:
-                import json
                 try:
                     det = json.loads(evento.details)
                     if isinstance(det, dict):

@@ -1,0 +1,44 @@
+﻿openapi: 3.1.0
+info:
+  title: IVOA (Inteligencia Operativa y Visión Artificial) Edge-to-Cloud API
+  description: Ecosistema orquestador para captura de telemetría Edge AI, control de flujos de video y reportes analíticos de cumplimiento en sucursales físicas.
+  version: 1.0.0
+servers:
+  - url: /v1
+    description: Nodo API de Control Cloud
+paths:
+  /findings:
+    post:
+      summary: Reportar hallazgos de Edge
+      description: Endpoint utilizado por los nodos Edge para inyectar inferencias al Cloud.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindingPayload'
+      responses:
+        '200':
+          description: OK
+  /notify_config:
+    get:
+      summary: Obtener configuración de alertas WhatsApp
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Actualizar configuración
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    FindingPayload:
+      type: object
+      properties:
+        incident_type:
+          type: string
+        severity:
+          type: string
+        payload:
+          type: object
