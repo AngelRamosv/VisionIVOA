@@ -1,4 +1,4 @@
-﻿# 👁️ IVOA (Inteligencia Operativa y Visión Artificial)
+﻿# IVOA (Inteligencia Operativa y Visión Artificial)
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-OpenAPI-009688?logo=fastapi)
