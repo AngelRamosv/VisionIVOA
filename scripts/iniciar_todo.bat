@@ -5,7 +5,7 @@ echo          INICIANDO PLATAFORMA DE SUPERVISION IVOA
 echo =======================================================
 echo.
 
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 echo [*] Cargando base de datos historica...
 echo    -^> Historial y registros mantenidos.
