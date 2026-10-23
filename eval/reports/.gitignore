@@ -1,0 +1,4 @@
+# Ignorar reportes generados automáticamente por el harness
+*.json
+*.md
+!README.md
