@@ -15,8 +15,17 @@ El proyecto está diseñado bajo una arquitectura de especificación abierta (Op
 
 ### Estructura del Repositorio
 
-- `src/edge_sensor/`: Nodos de visión artificial y procesamiento de video local. Implementa inferencia asíncrona, *frame-skipping* inteligente, tracking de personas (ByteTrack) y motor biométrico facial desacoplado en ONNX (`biometric_engine.py`).
+- `src/edge_sensor/`: Nodos de visión artificial y procesamiento de video local. Arquitectura desacoplada en 6 módulos especializados coordinados por `ivoa_engine.py`:
+  - `model_optimizer.py`: Detección de aceleración de hardware y compilación en caché (ONNX/OpenVINO).
+  - `detection_pipeline.py`: Inferencia en cascada de modelos YOLO, tracking ByteTrack y biometría UniFace ArcFace (`biometric_engine.py`).
+  - `bill_validator.py`: Filtrado relacional anti-alucinaciones en conteo de billetes y efectivo.
+  - `business_rules.py`: Auditoría de código de vestimenta HSV, comida a la boca, pantallas y geofencing.
+  - `queue_analyzer.py`: Aforo de fila y módulos, detección de saturación, tailgating y tiempos de atención.
+  - `alert_manager.py`: Debounce, cooldown, deduplicación y sincronización de `notify_config.json`.
+  - `visual_annotator.py`: Renderizado gráfico con Supervision, trazado, [TICKET EMITIDO] y banner de apertura tardía.
 - `src/cloud_backend/`: Capa de orquestación (FastAPI). Sirve interfaces UI, almacena analíticas (`data/ivoa.db`) y gestiona el envío de notificaciones. Cumple estrictamente con el estándar **OpenAPI 3.0**.
+- `eval/`: Suite automatizada de benchmarks y regresión para modelos y reglas de negocio.
+- `skills/`: Guías y directivas de habilidades autocontenidas (`hardware-optimizer`, `bill-validator`, `benchmark-harness`, etc.).
 - `dataset_v9/`: (Ignorado en git) Entornos locales de datos.
 - `*.pt`: (Ignorado en git) Pesos de las redes neuronales de Ultralytics (YOLOv8).
 
@@ -61,6 +70,20 @@ La arquitectura es altamente acoplable gracias a la especificación de la API. D
    - **SCRFD:** Detección facial ultra rápida y extracción de 5 landmarks anatómicos dentro del recorte superior de la persona.
    - **ArcFace (MNet):** Generación de embeddings faciales normalizados de 512 dimensiones para persistencia y re-identificación de clientes/empleados contra la base de datos local (`data/ivoa.db`).
    - **Caché en RAM de Identidades:** Inferencia en sub-milisegundos (\(O(1)\) en memoria) que previene caídas de FPS y bloqueos en disco.
+
+## 📊 Evaluación y Benchmarking (`eval/`)
+
+Antes de promover nuevos pesos `.pt` o cambiar umbrales de detección, ejecuta la suite de evaluación automatizada:
+
+```bash
+# 1. Benchmark aislado de inferencia (FPS y latencia p95):
+python -m eval.runners.benchmark_model --weights yolov8n.pt --warmup 15 --iterations 100
+
+# 2. Evaluación End-to-End contra casos de prueba y ground-truth:
+python -m eval.runners.evaluate_pipeline --dataset eval/datasets/cellphone_confusion
+```
+
+*Los reportes JSON se generan automáticamente en `eval/reports/` evaluando el criterio Pass/Fail (p95 $\le 65\text{ ms}$, FPR $\le 5\%$, Recall $\ge 90\%$).*
 
 ## 📄 Contratos de API (OpenAPI)
 Al correr el backend, el motor FastAPI auto-genera la especificación OpenAPI basada en los esquemas Pydantic (`schemas.py`). Todos los endpoints (ej. `/v1/findings`, `/v1/notify_config`) están fuertemente tipados.
